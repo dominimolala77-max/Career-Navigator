@@ -32,7 +32,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 <span className="grid size-9 place-items-center rounded-md bg-slate-950 text-white shadow-sm">
                   <BriefcaseBusiness className="size-4" />
                 </span>
-                <span>Career Navigator</span>
+                <span>CareerPath SA</span>
               </a>
             </Link>
             <nav className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, CalendarCheck2, CheckCircle2, FileText, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, CalendarCheck2, CheckCircle2, Compass, FileText, GraduationCap, Sparkles, Target, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,52 @@ const features = [
   },
 ];
 
+const onboardingSteps = [
+  {
+    icon: GraduationCap,
+    title: "Complete your SA learner profile",
+    description: "Add APS, matric subjects, results, interests, location and goals.",
+  },
+  {
+    icon: Compass,
+    title: "Explore matched pathways",
+    description: "Receive tailored career, university and TVET recommendations for South Africa.",
+  },
+  {
+    icon: CalendarCheck2,
+    title: "Organise applications & funding",
+    description: "Track NSFAS, bursaries, learnerships and closing dates in one place.",
+  },
+  {
+    icon: Sparkles,
+    title: "Stay ready with reminders",
+    description: "Get alerts for deadlines, interviews and next steps as your journey evolves.",
+  },
+];
+
+const recommendationTopics = [
+  {
+    icon: BookOpen,
+    title: "Study field discovery",
+    description: "Find careers and qualifications that match your APS, interests and strengths.",
+  },
+  {
+    icon: GraduationCap,
+    title: "University & TVET guidance",
+    description: "Compare admission requirements, pass rates and local options.",
+  },
+  {
+    icon: Target,
+    title: "Funding & bursaries",
+    description: "Match open opportunities to your profile and application timeline.",
+  },
+  {
+    icon: FileText,
+    title: "APS & subject guide",
+    description: "Calculate your APS and explore the right subject combinations for your goals.",
+  },
+];
+
 export function HomePage() {
   const { user } = useAuth();
 
@@ -44,7 +90,7 @@ export function HomePage() {
         <div className="grid gap-8">
           <div className="inline-flex w-fit items-center gap-2 rounded-md border border-teal-200 bg-white/80 px-3 py-1.5 text-sm font-medium text-teal-900 shadow-sm">
             <CheckCircle2 className="size-4 text-teal-600" />
-            Built for decisive career moves
+            Built for South African learners and applicants
           </div>
 
           <div className="grid gap-5">
@@ -94,57 +140,93 @@ export function HomePage() {
         </div>
 
         <div className="relative">
-          <div className="rounded-2xl border border-white/80 bg-white/82 p-3 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur">
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-950 text-white">
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div>
-                  <p className="text-sm text-slate-300">Pipeline value</p>
-                  <p className="text-3xl font-semibold">R50,000</p>
-                </div>
-                <div className="grid size-11 place-items-center rounded-md bg-teal-400/15 text-teal-200">
-                  <BarChart3 className="size-5" />
-                </div>
-              </div>
+          <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-gradient-to-br from-teal-500 via-cyan-500 to-indigo-600 p-4 shadow-[0_30px_80px_rgba(15,23,42,0.14)]">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.28),transparent_22%),radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.18),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0))]">
+              <div className="absolute inset-x-0 top-8 mx-auto h-36 w-36 rounded-full bg-white/20 blur-3xl" />
+              <div className="absolute bottom-10 left-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
+              <div className="absolute bottom-16 right-10 h-28 w-28 rounded-full bg-cyan-200/20 blur-3xl" />
+              <div className="absolute inset-x-0 bottom-0 h-[36%] bg-[linear-gradient(180deg,transparent,rgba(15,23,42,0.65))]" />
 
-              <div className="grid gap-5 p-5">
-                <div className="grid gap-3 rounded-lg bg-white/[0.06] p-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-300">Dream role readiness</span>
-                    <span className="font-medium text-teal-200">86%</span>
+              <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-white">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
+                  Stunning career vision
+                </div>
+                <h2 className="max-w-sm text-4xl font-semibold leading-tight sm:text-5xl">
+                  See the path ahead with confidence
+                </h2>
+                <p className="max-w-[24rem] text-sm leading-6 text-white/80">
+                  A bold, polished visual that captures the energy of smart career choices and fast-moving opportunities.
+                </p>
+                <div className="grid w-full grid-cols-3 gap-3 pt-6">
+                  <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-left">
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/70">APS</p>
+                    <p className="mt-2 text-lg font-semibold">34+</p>
                   </div>
-                  <div className="h-2 rounded-full bg-white/10">
-                    <div className="h-2 w-[86%] rounded-full bg-teal-300" />
+                  <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-left">
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/70">Bursaries</p>
+                    <p className="mt-2 text-lg font-semibold">24 open</p>
                   </div>
-                </div>
-
-                <div className="grid gap-4">
-                  {stages.map(([label, value]) => (
-                    <div key={label} className="grid gap-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-300">{label}</span>
-                        <span className="text-white">{value}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-white/10">
-                        <div className="h-2 rounded-full bg-gradient-to-r from-teal-300 via-amber-200 to-rose-300" style={{ width: `${value}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid gap-3 rounded-lg bg-white text-slate-950 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="grid size-10 place-items-center rounded-md bg-amber-100 text-amber-700">
-                      <CalendarCheck2 className="size-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Next high-leverage action</p>
-                      <p className="text-sm text-slate-500">Tailor CV for product analyst role</p>
-                    </div>
+                  <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-left">
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/70">Applications</p>
+                    <p className="mt-2 text-lg font-semibold">12 tracked</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="grid gap-6 rounded-3xl border border-white/80 bg-white/82 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        <div className="grid gap-4 sm:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-amber-500">CareerPath SA onboarding</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+              Start your guided South African career journey
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
+              Build a complete profile, discover study pathways, match bursaries, and track every application in one place.
+            </p>
+          </div>
+          <div className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-950/5 p-5 text-slate-700">
+            {onboardingSteps.map((step) => (
+              <div key={step.title} className="grid gap-3 rounded-3xl bg-white/90 p-4 shadow-sm">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-teal-500/10 text-teal-600">
+                  <step.icon className="size-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-950">{step.title}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">{step.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-950/5 p-6 sm:grid-cols-2">
+          {recommendationTopics.map((topic) => (
+            <div key={topic.title} className="rounded-3xl bg-white p-5 shadow-sm">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-teal-500/10 text-teal-600">
+                <topic.icon className="size-5" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-slate-950">{topic.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{topic.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button asChild size="lg" className="h-12 rounded-md px-6 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
+            <Link href={user ? "/dashboard" : "/signup"}>
+              Start your pathway
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+          {!user ? (
+            <Button asChild size="lg" variant="outline" className="h-12 rounded-md border-slate-300 bg-white/70 px-6">
+              <Link href="/login">Already have an account</Link>
+            </Button>
+          ) : null}
         </div>
       </section>
 

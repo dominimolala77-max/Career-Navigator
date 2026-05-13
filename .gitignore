@@ -10,7 +10,6 @@ build/
 # Environment
 .env
 .env.*
-!.env.example
 
 # Supabase local state
 supabase/.branches/
