@@ -18,7 +18,7 @@ type AuthContextValue = {
   signUpWithEmailPassword: (args: {
     email: string;
     password: string;
-  }) => Promise<void>;
+  }) => Promise<any>;
   signInWithEmailPassword: (args: {
     email: string;
     password: string;
@@ -77,11 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
         );
       }
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
       if (error) throw error;
+      return data;
     },
     [],
   );

@@ -11,12 +11,14 @@ import { InAppBrowser } from "@/components/ui/in-app-browser";
 
 const TYPE_LABELS: Record<string, string> = {
   public_university: "Public University",
+  university_of_technology: "University of Technology",
   private_institution: "Private Institution",
   tvet_college: "TVET College",
 };
 
 const TYPE_COLORS: Record<string, string> = {
   public_university: "cp-badge-primary",
+  university_of_technology: "bg-blue-100 text-blue-800",
   private_institution: "cp-badge-blue",
   tvet_college: "cp-badge-amber",
 };
@@ -95,7 +97,7 @@ export function UniversitiesPage() {
         </div>
         {[
           { label: "Province", value: province, setter: setProvince, options: ["All", ...PROVINCES] },
-          { label: "Type", value: type, setter: setType, options: ["All", "public_university", "private_institution", "tvet_college"] },
+          { label: "Type", value: type, setter: setType, options: ["All", "public_university", "university_of_technology", "private_institution", "tvet_college"] },
         ].map(f => (
           <select key={f.label}
             className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"

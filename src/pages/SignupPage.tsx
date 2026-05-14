@@ -28,9 +28,13 @@ export function SignupPage() {
 
   async function onSubmit(values: Values) {
     try {
-      await signUpWithEmailPassword({ email: values.email, password: values.password });
-      toast({ title: "Account created! Let's set up your profile." });
-      navigate("/onboarding");
+      const data = await signUpWithEmailPassword({ email: values.email, password: values.password });
+      if (!data?.session) {
+        toast({ title: "Check your email", description: "We sent a confirmation link to your email. Click it to verify your account." });
+      } else {
+        toast({ title: "Account created! Let's set up your profile." });
+        navigate("/onboarding");
+      }
     } catch (e) {
       toast({ title: "Sign up failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     }

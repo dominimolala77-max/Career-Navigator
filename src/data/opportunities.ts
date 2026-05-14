@@ -35,6 +35,7 @@ export const OPPORTUNITIES: Opportunity[] = [
     applicationDocuments: ["SA ID", "Matric certificate", "CV", "Motivational letter"],
     minQualification: "Grade 12",
     contactEmail: "learnership@eskom.co.za",
+    applicationUrl: "https://www.eskom.co.za/careers",
   },
   {
     id: "transnet_graduate",
@@ -52,6 +53,7 @@ export const OPPORTUNITIES: Opportunity[] = [
     applicationDocuments: ["SA ID", "Degree certificate", "Academic transcript", "CV", "Reference letters"],
     minQualification: "BTech / BEng",
     contactEmail: "graduates@transnet.net",
+    applicationUrl: "https://www.transnet.net/Careers",
   },
   {
     id: "sasol_internship",
@@ -153,6 +155,7 @@ export const OPPORTUNITIES: Opportunity[] = [
     provinces: ["All provinces"],
     applicationDocuments: ["SA ID", "Proof of registration", "Academic results", "CV"],
     minQualification: "3rd year BEd student",
+    applicationUrl: "https://sayouth.mobi",
   },
   {
     id: "health_dept_nursing",
@@ -169,6 +172,7 @@ export const OPPORTUNITIES: Opportunity[] = [
     provinces: ["All provinces"],
     applicationDocuments: ["SA ID", "Matric certificate", "Medical fitness certificate", "Police clearance", "CV"],
     minQualification: "Grade 12",
+    applicationUrl: "https://www.health.gov.za",
   },
   {
     id: "microsoft_sa_internship",
