@@ -1,0 +1,374 @@
+import { useEffect, useState } from "react";
+import { BookOpen, CalendarDays, CheckCircle2, Circle, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { getApplications, createApplication, updateApplication, deleteApplication, type Application } from "@/lib/supabase-helpers";
+import { useToast } from "@/hooks/use-toast";
+
+const STATUSES: { id: Application["status"]; label: string; color: string }[] = [
+  { id: "todo", label: "To Do", color: "bg-slate-100 text-slate-600" },
+  { id: "in_progress", label: "In Progress", color: "bg-blue-50 text-blue-700" },
+  { id: "submitted", label: "Submitted", color: "bg-amber-50 text-amber-700" },
+  { id: "accepted", label: "Accepted", color: "bg-[#E8F5F3] text-[#006B5E]" },
+  { id: "rejected", label: "Rejected", color: "bg-red-50 text-red-700" },
+  { id: "waitlisted", label: "Waitlisted", color: "bg-purple-50 text-purple-700" },
+];
+
+const APP_TYPES = ["university", "nsfas", "bursary", "learnership", "internship"] as const;
+const PRIORITIES: { id: "high" | "medium" | "low"; label: string; color: string }[] = [
+  { id: "high", label: "High", color: "text-red-600" },
+  { id: "medium", label: "Medium", color: "text-amber-600" },
+  { id: "low", label: "Low", color: "text-slate-500" },
+];
+
+export function ApplicationsPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [selected, setSelected] = useState<Application | null>(null);
+  const [filterType, setFilterType] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+
+  // New application form state
+  const [form, setForm] = useState({
+    type: "university" as Application["type"],
+    institution: "",
+    programme: "",
+    status: "todo" as Application["status"],
+    deadline: "",
+    priority: "medium" as "high" | "medium" | "low",
+    notes: "",
+    amount: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    getApplications(user.id).then(apps => { setApplications(apps); setLoading(false); });
+  }, [user]);
+
+  async function handleAdd() {
+    if (!user || !form.institution || !form.type) return;
+    setSaving(true);
+    const app = await createApplication(user.id, {
+      ...form,
+      deadline: form.deadline || undefined,
+      amount: form.amount || undefined,
+      documents: [],
+    });
+    setSaving(false);
+    if (app) {
+      setApplications(prev => [app, ...prev]);
+      setShowAdd(false);
+      setForm({ type: "university", institution: "", programme: "", status: "todo", deadline: "", priority: "medium", notes: "", amount: "" });
+      toast({ title: "Application added!" });
+    }
+  }
+
+  async function handleStatusChange(id: string, status: Application["status"]) {
+    const ok = await updateApplication(id, { status });
+    if (ok) setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+  }
+
+  async function handleToggleDoc(appId: string, docIndex: number, uploaded: boolean) {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+    const docs = [...(app.documents ?? [])];
+    docs[docIndex] = { ...docs[docIndex], uploaded };
+    const ok = await updateApplication(appId, { documents: docs });
+    if (ok) setApplications(prev => prev.map(a => a.id === appId ? { ...a, documents: docs } : a));
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this application?")) return;
+    const ok = await deleteApplication(id);
+    if (ok) {
+      setApplications(prev => prev.filter(a => a.id !== id));
+      if (selected?.id === id) setSelected(null);
+      toast({ title: "Application deleted" });
+    }
+  }
+
+  const displayed = applications.filter(a => {
+    if (filterType !== "All" && a.type !== filterType) return false;
+    if (filterStatus !== "All" && a.status !== filterStatus) return false;
+    return true;
+  });
+
+  const kanbanCols: Application["status"][] = ["todo", "in_progress", "submitted", "accepted"];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-center">
+          <div className="mx-auto mb-4 size-10 animate-spin rounded-full border-4 border-[#006B5E] border-t-transparent" />
+          <p className="text-sm text-slate-500">Loading applications…</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="rounded-2xl border border-border bg-white p-6 shadow-sm flex-1">
+          <div className="cp-section-label mb-2">Application Tracker</div>
+          <h1 className="text-2xl font-extrabold text-[#0F172A]">My Applications</h1>
+          <p className="mt-1 text-sm text-slate-500">Track all your university, NSFAS, bursary, and learnership applications in one place.</p>
+        </div>
+        <Button onClick={() => setShowAdd(true)} className="bg-[#006B5E] hover:bg-[#005548] text-white gap-2 self-center">
+          <Plus className="size-4" /> Add Application
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <select className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
+          value={filterType} onChange={e => setFilterType(e.target.value)}>
+          <option value="All">All Types</option>
+          {APP_TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
+        </select>
+        <select className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
+          value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="All">All Statuses</option>
+          {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+        </select>
+        <div className="ml-auto flex gap-3 text-sm text-slate-500 items-center">
+          <span>{displayed.length} applications</span>
+          <span className="cp-badge-primary">{applications.filter(a => a.status === "accepted").length} accepted</span>
+        </div>
+      </div>
+
+      {/* Kanban Board */}
+      {displayed.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-white p-12 text-center shadow-sm">
+          <BookOpen className="mx-auto mb-3 size-10 text-slate-200" />
+          <p className="font-semibold text-[#0F172A]">No applications yet</p>
+          <p className="text-sm text-slate-400 mt-1">Add your first application to start tracking</p>
+          <Button onClick={() => setShowAdd(true)} className="mt-4 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
+            <Plus className="size-4" /> Add Application
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {kanbanCols.map(col => {
+            const colApps = displayed.filter(a => a.status === col);
+            const colDef = STATUSES.find(s => s.id === col)!;
+            return (
+              <div key={col} className="rounded-2xl border border-border bg-slate-50 p-3">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${colDef.color}`}>{colDef.label}</span>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400">{colApps.length}</span>
+                </div>
+                <div className="grid gap-2">
+                  {colApps.map(app => {
+                    const daysLeft = app.deadline ? Math.ceil((new Date(app.deadline).getTime() - Date.now()) / 86400000) : null;
+                    const priority = PRIORITIES.find(p => p.id === app.priority);
+                    return (
+                      <div key={app.id} className="rounded-xl border border-border bg-white p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setSelected(app)}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-bold text-[#0F172A] line-clamp-1">{app.institution}</p>
+                            <p className="text-xs text-slate-500 capitalize mt-0.5">{app.type}{app.programme ? ` · ${app.programme}` : ""}</p>
+                          </div>
+                          {priority && <span className={`text-xs font-semibold ${priority.color}`}>{priority.label}</span>}
+                        </div>
+                        {daysLeft !== null && (
+                          <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${daysLeft <= 3 ? "text-red-600" : daysLeft <= 7 ? "text-amber-600" : "text-slate-400"}`}>
+                            <CalendarDays className="size-3" />
+                            {daysLeft > 0 ? `${daysLeft}d left` : daysLeft === 0 ? "Due today!" : "Overdue"}
+                          </div>
+                        )}
+                        {app.documents && app.documents.length > 0 && (
+                          <div className="mt-2 flex items-center gap-1 text-xs text-slate-400">
+                            <CheckCircle2 className="size-3" />
+                            {app.documents.filter(d => d.uploaded).length}/{app.documents.length} docs
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Other statuses (rejected / waitlisted) */}
+      {displayed.some(a => ["rejected", "waitlisted"].includes(a.status)) && (
+        <div>
+          <h2 className="font-bold text-[#0F172A] mb-3">Other Applications</h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {displayed.filter(a => ["rejected", "waitlisted"].includes(a.status)).map(app => {
+              const statusDef = STATUSES.find(s => s.id === app.status)!;
+              return (
+                <div key={app.id} className="rounded-xl border border-border bg-white p-4 shadow-sm cursor-pointer hover:shadow-md" onClick={() => setSelected(app)}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-[#0F172A]">{app.institution}</p>
+                      <p className="text-xs text-slate-500 capitalize">{app.type}</p>
+                    </div>
+                    <span className={`text-xs font-semibold rounded-full px-2.5 py-0.5 ${statusDef.color}`}>{statusDef.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Add Modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-border p-6">
+              <h2 className="text-lg font-extrabold text-[#0F172A]">Add Application</h2>
+              <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-slate-700 text-2xl">&times;</button>
+            </div>
+            <div className="p-6 grid gap-4">
+              <div>
+                <Label>Type *</Label>
+                <select className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
+                  value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as Application["type"] }))}>
+                  {APP_TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Institution / Provider *</Label>
+                <Input className="mt-1.5 h-11" placeholder="e.g. University of Cape Town" value={form.institution}
+                  onChange={e => setForm(f => ({ ...f, institution: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Programme / Position</Label>
+                <Input className="mt-1.5 h-11" placeholder="e.g. BSc Computer Science" value={form.programme}
+                  onChange={e => setForm(f => ({ ...f, programme: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Status</Label>
+                  <select className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
+                    value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as Application["status"] }))}>
+                    {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <select className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
+                    value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as "high" | "medium" | "low" }))}>
+                    {PRIORITIES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <Label>Deadline</Label>
+                <Input type="date" className="mt-1.5 h-11" value={form.deadline}
+                  onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Notes</Label>
+                <textarea className="mt-1.5 w-full rounded-lg border border-border bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E] resize-none"
+                  rows={3} placeholder="Additional notes…" value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setShowAdd(false)}>Cancel</Button>
+                <Button onClick={handleAdd} disabled={saving || !form.institution} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
+                  {saving ? "Saving…" : "Add Application"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail / Edit Modal */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-start justify-between border-b border-border p-6">
+              <div>
+                <h2 className="text-lg font-extrabold text-[#0F172A]">{selected.institution}</h2>
+                <p className="text-sm text-slate-500 capitalize">{selected.type}{selected.programme ? ` · ${selected.programme}` : ""}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-700 text-2xl">&times;</button>
+            </div>
+            <div className="p-6 grid gap-5">
+              {/* Status Update */}
+              <div>
+                <p className="text-sm font-semibold text-[#0F172A] mb-2">Update Status</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {STATUSES.map(s => (
+                    <button key={s.id} onClick={() => { handleStatusChange(selected.id, s.id); setSelected(prev => prev ? { ...prev, status: s.id } : null); }}
+                      className={`rounded-lg border px-2 py-1.5 text-xs font-semibold transition-all ${selected.status === s.id ? `${s.color} border-current` : "border-border hover:border-slate-300"}`}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {[
+                  { l: "Priority", v: selected.priority ?? "medium" },
+                  { l: "Deadline", v: selected.deadline ?? "Not set" },
+                  { l: "Amount", v: selected.amount ?? "—" },
+                  { l: "Ref #", v: selected.reference_number ?? "—" },
+                ].map(i => (
+                  <div key={i.l} className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-400">{i.l}</p>
+                    <p className="font-bold text-[#0F172A] capitalize">{i.v}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Documents */}
+              {selected.documents && selected.documents.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A] mb-2">
+                    <CheckCircle2 className="inline mr-1 size-4 text-[#006B5E]" />
+                    Documents ({selected.documents.filter(d => d.uploaded).length}/{selected.documents.length} ready)
+                  </p>
+                  <div className="grid gap-2">
+                    {selected.documents.map((doc, idx) => (
+                      <label key={doc.name} className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-slate-50">
+                        <input type="checkbox" className="size-4 accent-[#006B5E]" checked={doc.uploaded}
+                          onChange={e => handleToggleDoc(selected.id, idx, e.target.checked)} />
+                        <span className="text-sm text-slate-700 flex-1">{doc.name}</span>
+                        {doc.required && <span className="text-xs text-red-500">Required</span>}
+                        {doc.uploaded ? <CheckCircle2 className="size-4 text-[#006B5E]" /> : <Circle className="size-4 text-slate-300" />}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selected.notes && (
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A] mb-1">Notes</p>
+                  <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3">{selected.notes}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleDelete(selected.id)}>
+                  <Trash2 className="size-4 mr-1" /> Delete
+                </Button>
+                <Button className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white" onClick={() => setSelected(null)}>Done</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

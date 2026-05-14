@@ -1,0 +1,241 @@
+export interface Opportunity {
+  id: string;
+  title: string;
+  company: string;
+  type: "learnership" | "internship" | "apprenticeship" | "graduate_programme";
+  field: string;
+  description: string;
+  duration: string;
+  stipend: string;
+  deadline: string;
+  status: "open" | "closed" | "opening_soon";
+  eligibility: string[];
+  provinces: string[];
+  applicationDocuments: string[];
+  minAps?: number;
+  minQualification: string;
+  contactEmail?: string;
+  applicationUrl?: string;
+}
+
+export const OPPORTUNITIES: Opportunity[] = [
+  {
+    id: "eskom_learnership",
+    title: "Electrical Engineering Learnership",
+    company: "Eskom",
+    type: "learnership",
+    field: "Engineering",
+    description: "Gain hands-on electrical engineering experience at South Africa's power utility. Includes NQF Level 4 qualification.",
+    duration: "18 months",
+    stipend: "R5,500/month",
+    deadline: "31 August 2025",
+    status: "open",
+    eligibility: ["Grade 12 with Mathematics and Physical Sciences", "South African citizen", "Age 18–35"],
+    provinces: ["Gauteng", "Mpumalanga", "KwaZulu-Natal", "Limpopo"],
+    applicationDocuments: ["SA ID", "Matric certificate", "CV", "Motivational letter"],
+    minQualification: "Grade 12",
+    contactEmail: "learnership@eskom.co.za",
+  },
+  {
+    id: "transnet_graduate",
+    title: "Graduate Engineer Programme",
+    company: "Transnet",
+    type: "graduate_programme",
+    field: "Engineering",
+    description: "Structured 2-year graduate programme for engineering graduates in freight logistics and rail.",
+    duration: "24 months",
+    stipend: "R22,000/month",
+    deadline: "31 July 2025",
+    status: "open",
+    eligibility: ["BTech or BEng degree in Mechanical/Civil/Electrical", "South African citizen", "Maximum 1 year work experience"],
+    provinces: ["Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape"],
+    applicationDocuments: ["SA ID", "Degree certificate", "Academic transcript", "CV", "Reference letters"],
+    minQualification: "BTech / BEng",
+    contactEmail: "graduates@transnet.net",
+  },
+  {
+    id: "sasol_internship",
+    title: "Chemical Engineering Internship",
+    company: "Sasol",
+    type: "internship",
+    field: "Engineering",
+    description: "12-month internship at Sasol's operations, working alongside experienced engineers on real projects.",
+    duration: "12 months",
+    stipend: "R18,000/month",
+    deadline: "30 September 2025",
+    status: "open",
+    eligibility: ["3rd or 4th year Chemical/Process Engineering student", "South African citizen", "65%+ academic average"],
+    provinces: ["Gauteng", "Mpumalanga"],
+    applicationDocuments: ["SA ID", "Academic transcript", "CV", "Proof of registration"],
+    minQualification: "3rd year BEng student",
+    applicationUrl: "https://www.sasol.com/internships",
+  },
+  {
+    id: "fnb_it_learnership",
+    title: "IT & Digital Learnership",
+    company: "First National Bank (FNB)",
+    type: "learnership",
+    field: "Computer Science & IT",
+    description: "12-month learnership in IT support, software development foundations, and digital banking. NQF Level 5.",
+    duration: "12 months",
+    stipend: "R6,000/month",
+    deadline: "30 September 2025",
+    status: "open",
+    eligibility: ["Grade 12 or IT qualification", "South African citizen aged 18–35", "Interest in technology"],
+    provinces: ["Gauteng", "Western Cape", "KwaZulu-Natal"],
+    applicationDocuments: ["SA ID", "Matric certificate or IT diploma", "CV"],
+    minQualification: "Grade 12",
+    applicationUrl: "https://www.fnb.co.za/careers/learnerships",
+  },
+  {
+    id: "absa_graduate",
+    title: "Absa Graduate Development Programme",
+    company: "Absa Group",
+    type: "graduate_programme",
+    field: "Business & Commerce",
+    description: "2-year rotational programme for finance, accounting, and IT graduates across Absa's business units.",
+    duration: "24 months",
+    stipend: "R20,000/month",
+    deadline: "31 August 2025",
+    status: "open",
+    eligibility: ["BCom/BSc/BIT degree", "South African citizen", "65%+ average", "Graduated within past 2 years"],
+    provinces: ["Gauteng", "Western Cape"],
+    applicationDocuments: ["SA ID", "Degree certificate", "Academic transcript", "CV", "References"],
+    minQualification: "Degree",
+    applicationUrl: "https://www.absa.co.za/graduate",
+  },
+  {
+    id: "dhet_tvet_apprenticeship",
+    title: "Artisan Apprenticeship (Various Trades)",
+    company: "DHET / Merseta",
+    type: "apprenticeship",
+    field: "Engineering",
+    description: "Become a qualified artisan in trades like Electrician, Plumber, Welder, or Boilermaker. Includes theory and practical training.",
+    duration: "36 months",
+    stipend: "R4,000–R8,000/month",
+    deadline: "Rolling applications",
+    status: "open",
+    eligibility: ["Grade 10 minimum", "South African citizen aged 16–30", "Interested in a practical trade"],
+    provinces: ["All provinces"],
+    applicationDocuments: ["SA ID", "School results", "CV"],
+    minQualification: "Grade 10",
+    applicationUrl: "https://www.merseta.org.za",
+  },
+  {
+    id: "sanlam_finance",
+    title: "Finance & Actuarial Internship",
+    company: "Sanlam",
+    type: "internship",
+    field: "Business & Commerce",
+    description: "6-month internship at Sanlam's actuarial, investment, or finance divisions. Mentorship included.",
+    duration: "6 months",
+    stipend: "R14,000/month",
+    deadline: "31 October 2025",
+    status: "open",
+    eligibility: ["BSc Actuarial Science or BCom Finance student", "Completed at least 2nd year", "75%+ average"],
+    provinces: ["Western Cape", "Gauteng"],
+    applicationDocuments: ["SA ID", "Academic transcript", "CV", "Motivational letter"],
+    minQualification: "2nd year BSc/BCom",
+    applicationUrl: "https://www.sanlam.co.za/careers",
+  },
+  {
+    id: "govt_teaching_internship",
+    title: "Teaching Assistant Internship",
+    company: "Department of Basic Education",
+    type: "internship",
+    field: "Education",
+    description: "6-month teaching internship in public schools. Gain classroom experience under a mentor teacher.",
+    duration: "6 months",
+    stipend: "R5,000/month",
+    deadline: "31 July 2025",
+    status: "open",
+    eligibility: ["Enrolled in BEd or PGCE", "South African citizen", "3rd year or above"],
+    provinces: ["All provinces"],
+    applicationDocuments: ["SA ID", "Proof of registration", "Academic results", "CV"],
+    minQualification: "3rd year BEd student",
+  },
+  {
+    id: "health_dept_nursing",
+    title: "Community Service Nursing Learnership",
+    company: "SA Department of Health",
+    type: "learnership",
+    field: "Health Sciences",
+    description: "Structured learnership for aspiring nurses, working in public clinics and hospitals. NQF Level 5.",
+    duration: "24 months",
+    stipend: "R5,500/month",
+    deadline: "30 June 2025",
+    status: "open",
+    eligibility: ["Grade 12 with Life Sciences", "South African citizen", "Good health", "No criminal record"],
+    provinces: ["All provinces"],
+    applicationDocuments: ["SA ID", "Matric certificate", "Medical fitness certificate", "Police clearance", "CV"],
+    minQualification: "Grade 12",
+  },
+  {
+    id: "microsoft_sa_internship",
+    title: "Software Engineering Internship",
+    company: "Microsoft South Africa",
+    type: "internship",
+    field: "Computer Science & IT",
+    description: "4-month internship at Microsoft's SA office working on cloud, AI, or enterprise software projects.",
+    duration: "4 months",
+    stipend: "R18,000/month",
+    deadline: "31 August 2025",
+    status: "open",
+    eligibility: ["3rd/4th year Computer Science or Software Engineering student", "70%+ average", "Programming skills in C#, Python, or Java"],
+    provinces: ["Gauteng", "Western Cape"],
+    applicationDocuments: ["SA ID", "Academic transcript", "CV", "GitHub portfolio", "Motivational letter"],
+    minQualification: "3rd year BSc Computer Science",
+    applicationUrl: "https://careers.microsoft.com/students",
+  },
+  {
+    id: "agriculture_learnership",
+    title: "Agricultural Learnership (Agri-Seta)",
+    company: "AgriSETA",
+    type: "learnership",
+    field: "Agriculture",
+    description: "12-month learnership on commercial farms, covering crop production, livestock, and agri-business. NQF Level 4.",
+    duration: "12 months",
+    stipend: "R4,500/month",
+    deadline: "31 May 2025",
+    status: "closed",
+    eligibility: ["Grade 10 minimum", "South African citizen", "Interest in farming"],
+    provinces: ["Western Cape", "Free State", "Mpumalanga", "Limpopo", "North West"],
+    applicationDocuments: ["SA ID", "School results", "CV", "Motivational letter"],
+    minQualification: "Grade 10",
+    applicationUrl: "https://www.agriseta.co.za",
+  },
+  {
+    id: "dept_tourism_internship",
+    title: "Tourism & Hospitality Graduate Internship",
+    company: "SA Department of Tourism",
+    type: "internship",
+    field: "Tourism",
+    description: "12-month structured internship in tourism development, events, and hospitality management.",
+    duration: "12 months",
+    stipend: "R7,500/month",
+    deadline: "31 August 2025",
+    status: "open",
+    eligibility: ["Tourism/Hospitality diploma or degree", "South African citizen", "Graduated within past 2 years"],
+    provinces: ["Gauteng", "Western Cape", "KwaZulu-Natal"],
+    applicationDocuments: ["SA ID", "Diploma/degree certificate", "CV", "Motivational letter"],
+    minQualification: "NDip or BTourism",
+    applicationUrl: "https://www.tourism.gov.za",
+  },
+];
+
+export const OPPORTUNITY_TYPES = [
+  { id: "learnership", label: "Learnerships" },
+  { id: "internship", label: "Internships" },
+  { id: "apprenticeship", label: "Apprenticeships" },
+  { id: "graduate_programme", label: "Graduate Programmes" },
+];
+
+export function getOpportunitiesByField(field: string): Opportunity[] {
+  return OPPORTUNITIES.filter(o =>
+    o.field.toLowerCase().includes(field.toLowerCase())
+  );
+}
+
+export function getOpenOpportunities(): Opportunity[] {
+  return OPPORTUNITIES.filter(o => o.status === "open");
+}

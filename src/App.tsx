@@ -4,11 +4,19 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { AppLayout } from "@/features/layout/AppLayout";
-import { DashboardPage } from "@/pages/DashboardPage";
-import { HomePage } from "@/pages/HomePage";
+
+import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
-import { NotFoundPage } from "@/pages/NotFoundPage";
 import { SignupPage } from "@/pages/SignupPage";
+import { OnboardingPage } from "@/pages/OnboardingPage";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { CareerRecommendationsPage } from "@/pages/CareerRecommendationsPage";
+import { UniversitiesPage } from "@/pages/UniversitiesPage";
+import { FundingPage } from "@/pages/FundingPage";
+import { OpportunitiesPage } from "@/pages/OpportunitiesPage";
+import { ApplicationsPage } from "@/pages/ApplicationsPage";
+import { ProfilePage } from "@/pages/ProfilePage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 
 function getBasePath(): string {
   return import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -20,12 +28,47 @@ function App() {
       <AuthProvider>
         <AppLayout>
           <Switch>
-            <Route path="/" component={HomePage} />
+            <Route path="/" component={LandingPage} />
             <Route path="/login" component={LoginPage} />
             <Route path="/signup" component={SignupPage} />
+            <Route path="/onboarding">
+              <RequireAuth>
+                <OnboardingPage />
+              </RequireAuth>
+            </Route>
             <Route path="/dashboard">
               <RequireAuth>
                 <DashboardPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/careers">
+              <RequireAuth>
+                <CareerRecommendationsPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/universities">
+              <RequireAuth>
+                <UniversitiesPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/funding">
+              <RequireAuth>
+                <FundingPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/opportunities">
+              <RequireAuth>
+                <OpportunitiesPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/applications">
+              <RequireAuth>
+                <ApplicationsPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/profile">
+              <RequireAuth>
+                <ProfilePage />
               </RequireAuth>
             </Route>
             <Route>

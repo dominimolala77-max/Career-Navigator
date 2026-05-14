@@ -1,27 +1,19 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, CheckCircle2, UserPlus } from "lucide-react";
-import { useLocation } from "wouter";
-
+import { ArrowRight, GraduationCap } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 
-const schema = z
-  .object({
-    email: z.string().email(),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(8),
-  })
-  .refine((v) => v.password === v.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match",
-  });
+const schema = z.object({
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(8, "At least 8 characters"),
+  confirm: z.string(),
+}).refine(d => d.password === d.confirm, { message: "Passwords do not match", path: ["confirm"] });
 
 type Values = z.infer<typeof schema>;
 
@@ -29,129 +21,77 @@ export function SignupPage() {
   const { signUpWithEmailPassword, user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-
-  const form = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: "", password: "", confirmPassword: "" },
-  });
-
+  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "", confirm: "" } });
   const isSubmitting = form.formState.isSubmitting;
+
+  if (user) { navigate("/onboarding"); return null; }
 
   async function onSubmit(values: Values) {
     try {
       await signUpWithEmailPassword({ email: values.email, password: values.password });
-      toast({
-        title: "Account created",
-        description: "Check your inbox to confirm your email (if required by Supabase).",
-      });
-      navigate("/dashboard");
+      toast({ title: "Account created! Let's set up your profile." });
+      navigate("/onboarding");
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      toast({ title: "Sign up failed", description: message, variant: "destructive" });
+      toast({ title: "Sign up failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     }
   }
 
-  if (user) {
-    return (
-      <Card className="max-w-md border-white/80 bg-white/82 shadow-xl">
-        <CardHeader>
-          <CardTitle>You are already signed in</CardTitle>
-          <CardDescription>Open your dashboard to continue.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-2">
-          <Button onClick={() => navigate("/dashboard")}>Go to dashboard</Button>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            Home
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="grid min-h-[calc(100vh-180px)] place-items-center">
-      <Card className="w-full max-w-md overflow-hidden border-white/80 bg-white/86 shadow-[0_28px_70px_rgba(15,23,42,0.14)] backdrop-blur">
-        <div className="h-1.5 bg-gradient-to-r from-teal-500 via-amber-300 to-rose-400" />
-        <CardHeader className="space-y-4 p-7">
-          <div className="grid size-12 place-items-center rounded-md bg-slate-950 text-white">
-            <UserPlus className="size-5" />
+    <div className="flex min-h-[calc(100vh-65px)] items-center justify-center bg-slate-50 px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-[#006B5E] text-white shadow-md">
+            <GraduationCap className="size-7" />
           </div>
-          <div>
-            <CardTitle className="text-2xl">Create your workspace</CardTitle>
-            <CardDescription className="mt-2">
-              Start tracking roles, interview prep, and follow-ups in one polished system.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="p-7 pt-0">
+          <h1 className="text-2xl font-extrabold text-[#0F172A]">Create your account</h1>
+          <p className="mt-1 text-sm text-slate-500">Free · No credit card required</p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
+          <div className="mb-4 h-1 w-16 rounded-full bg-[#006B5E]" />
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input className="h-11 bg-white" autoComplete="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input className="h-11 bg-white" autoComplete="new-password" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm password</FormLabel>
-                    <FormControl>
-                      <Input className="h-11 bg-white" autoComplete="new-password" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" disabled={isSubmitting} className="h-11 w-full shadow-[0_16px_38px_rgba(15,23,42,0.16)]">
-                {isSubmitting ? (
-                  <>
-                    <Spinner className="mr-2" />
-                    Creating account...
-                  </>
-                ) : (
-                  <>
-                    Create account
-                    <ArrowRight className="size-4" />
-                  </>
-                )}
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email address</FormLabel>
+                  <FormControl>
+                    <Input className="h-11 bg-white" placeholder="you@example.com" autoComplete="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="password" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input className="h-11 bg-white" type="password" placeholder="Min. 8 characters" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="confirm" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm password</FormLabel>
+                  <FormControl>
+                    <Input className="h-11 bg-white" type="password" placeholder="Repeat password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full bg-[#006B5E] hover:bg-[#005548] text-white mt-2">
+                {isSubmitting ? "Creating account…" : <>Create Account <ArrowRight className="ml-2 size-4" /></>}
               </Button>
-
-              <Button type="button" variant="outline" className="h-11 bg-white" onClick={() => navigate("/login")}>
-                I already have an account
-              </Button>
-
-              <div className="mt-2 flex items-center gap-2 rounded-lg border border-teal-100 bg-teal-50/70 p-3 text-xs font-medium text-teal-900">
-                <CheckCircle2 className="size-4 text-teal-600" />
-                Your real environment keys stay private in .env
-              </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+          <p className="mt-5 text-center text-sm text-slate-500">
+            Already have an account?{" "}
+            <Link href="/login"><a className="font-semibold text-[#006B5E] hover:underline">Log in</a></Link>
+          </p>
+          <p className="mt-4 text-center text-xs text-slate-400">
+            By signing up you agree to our terms. Your data is protected under POPIA.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

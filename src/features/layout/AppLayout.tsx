@@ -1,88 +1,184 @@
 import type { ReactNode } from "react";
-import { BriefcaseBusiness, LogOut, Sparkles } from "lucide-react";
-import { Link } from "wouter";
+import { useState } from "react";
+import {
+  BookOpen, Briefcase, GraduationCap, Home, LayoutDashboard,
+  LogOut, Menu, Search, User, Wallet, X,
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { isSupabaseConfigured } from "@/features/auth/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
+
+const NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/careers", label: "Career Match", icon: Search },
+  { href: "/universities", label: "Universities", icon: GraduationCap },
+  { href: "/funding", label: "Funding", icon: Wallet },
+  { href: "/opportunities", label: "Opportunities", icon: Briefcase },
+  { href: "/applications", label: "Applications", icon: BookOpen },
+  { href: "/profile", label: "Profile", icon: User },
+];
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, signOut, isLoading } = useAuth();
   const { toast } = useToast();
+  const [location] = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isAuthPage = ["/login", "/signup"].includes(location);
+  const isLanding = location === "/";
+  const showNav = !isAuthPage && !isLanding && user;
 
   async function onLogout() {
     try {
       await signOut();
-      toast({ title: "Signed out" });
+      toast({ title: "Signed out successfully" });
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      toast({ title: "Sign out failed", description: message, variant: "destructive" });
+      toast({ title: "Sign out failed", description: String(e), variant: "destructive" });
     }
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_18%_8%,rgba(20,184,166,0.14),transparent_28%),radial-gradient(circle_at_82%_12%,rgba(245,158,11,0.12),transparent_26%),linear-gradient(180deg,#fbfcfb_0%,#f4f7f6_48%,#eef3f2_100%)] text-slate-950">
-      <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/78 backdrop-blur-xl">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top Header */}
+      <header className="sticky top-0 z-40 border-b border-border bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-6">
-            <Link href="/">
-              <a className={cn("flex items-center gap-2 font-semibold tracking-tight")}>
-                <span className="grid size-9 place-items-center rounded-md bg-slate-950 text-white shadow-sm">
-                  <BriefcaseBusiness className="size-4" />
-                </span>
-                <span>CareerPath SA</span>
-              </a>
-            </Link>
-            <nav className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-              <Link href="/dashboard">
-                <a className="rounded-md px-3 py-2 hover:bg-slate-100 hover:text-slate-950 transition-colors">
-                  Dashboard
-                </a>
-              </Link>
+          <Link href={user ? "/dashboard" : "/"}>
+            <a className="flex items-center gap-2.5">
+              <span className="grid size-9 place-items-center rounded-lg bg-[#006B5E] text-white shadow-sm">
+                <GraduationCap className="size-5" />
+              </span>
+              <span className="hidden font-bold text-[#0F172A] sm:block">
+                CareerPath <span className="text-[#006B5E]">SA</span>
+              </span>
+            </a>
+          </Link>
+
+          {/* Desktop Nav (only when logged in, not on landing/auth) */}
+          {showNav && (
+            <nav className="hidden items-center gap-1 lg:flex">
+              {NAV_ITEMS.map((item) => {
+                const active = location === item.href;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <a className={cn(
+                      "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-[#E8F5F3] text-[#006B5E]"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    )}>
+                      <item.icon className="size-4" />
+                      {item.label}
+                    </a>
+                  </Link>
+                );
+              })}
             </nav>
-          </div>
+          )}
 
           <div className="flex items-center gap-2">
             {!isLoading && !user ? (
               <>
-                <Button asChild variant="ghost">
+                <Button asChild variant="ghost" size="sm">
                   <Link href="/login">Log in</Link>
                 </Button>
-                <Button asChild className="shadow-[0_12px_30px_rgba(15,23,42,0.16)]">
-                  <Link href="/signup">Sign up</Link>
+                <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white">
+                  <Link href="/signup">Get Started</Link>
                 </Button>
               </>
-            ) : (
+            ) : user ? (
               <>
-                <Button asChild variant="outline">
-                  <Link href="/dashboard">
-                    <Sparkles className="size-4" />
-                    Open app
-                  </Link>
-                </Button>
-                <Button variant="ghost" onClick={onLogout}>
+                <Button variant="ghost" size="sm" onClick={onLogout} className="hidden sm:flex gap-1.5 text-slate-600">
                   <LogOut className="size-4" />
-                  <span className="hidden sm:inline">Log out</span>
+                  <span className="hidden md:inline">Sign out</span>
                 </Button>
+                {showNav && (
+                  <button
+                    className="flex size-9 items-center justify-center rounded-lg border border-border bg-white text-slate-600 lg:hidden"
+                    onClick={() => setMobileOpen(v => !v)}
+                  >
+                    {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+                  </button>
+                )}
               </>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
 
-      {!isSupabaseConfigured ? (
-        <div className="border-b border-amber-200 bg-amber-50/80">
-          <div className="mx-auto max-w-7xl px-4 py-3 text-sm text-amber-900 sm:px-6">
-            Auth is not configured. Set <code className="px-1">VITE_SUPABASE_URL</code> and{" "}
-            <code className="px-1">VITE_SUPABASE_ANON_KEY</code> in{" "}
-            <code className="px-1">.env</code>.
+      {/* Mobile Nav Drawer */}
+      {showNav && mobileOpen && (
+        <div className="fixed inset-0 z-30 lg:hidden">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
+          <div className="absolute left-0 top-[57px] bottom-0 w-72 border-r border-border bg-white shadow-xl">
+            <nav className="flex flex-col gap-1 p-4">
+              {NAV_ITEMS.map((item) => {
+                const active = location === item.href;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <a
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-[#E8F5F3] text-[#006B5E]"
+                          : "text-slate-700 hover:bg-slate-50"
+                      )}
+                    >
+                      <item.icon className="size-5" />
+                      {item.label}
+                    </a>
+                  </Link>
+                );
+              })}
+              <div className="mt-4 border-t border-border pt-4">
+                <button
+                  onClick={onLogout}
+                  className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  <LogOut className="size-5" />
+                  Sign out
+                </button>
+              </div>
+            </nav>
           </div>
         </div>
-      ) : null}
+      )}
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">{children}</main>
+      {/* Main Content */}
+      <main className={cn(
+        "mx-auto max-w-7xl px-4 sm:px-6",
+        showNav ? "py-6" : "py-0"
+      )}>
+        {children}
+      </main>
+
+      {/* Mobile Bottom Nav */}
+      {showNav && (
+        <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white px-2 pb-safe lg:hidden">
+          <div className="flex items-center justify-around py-2">
+            {NAV_ITEMS.slice(0, 5).map((item) => {
+              const active = location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <a className={cn(
+                    "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors",
+                    active ? "text-[#006B5E]" : "text-slate-500"
+                  )}>
+                    <item.icon className={cn("size-5", active && "text-[#006B5E]")} />
+                    {item.label.split(" ")[0]}
+                  </a>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+
+      {/* Spacer for bottom nav */}
+      {showNav && <div className="h-20 lg:h-0" />}
     </div>
   );
 }
