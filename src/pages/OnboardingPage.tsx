@@ -248,31 +248,30 @@ export function OnboardingPage() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] px-5 py-4">
-                <div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] px-5 py-4 text-center sm:text-left">
+                <div className="flex-1">
                   <p className="text-sm font-semibold text-[#0F172A]">Calculated APS Score</p>
                   <p className="text-xs text-slate-500">Based on your marks (excl. Life Orientation)</p>
                 </div>
-                <p className="text-4xl font-extrabold text-[#006B5E]">{apsScore}</p>
+                <p className="text-4xl font-extrabold text-[#006B5E] shrink-0">{apsScore}</p>
               </div>
 
               <div className="grid gap-3">
                 {subjects.map(s => (
-                  <div key={s.code} className="flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0F172A] truncate">{s.name}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number" min={0} max={100}
-                        className="h-9 w-20 text-center"
-                        placeholder="%"
-                        value={s.mark || ""}
-                        onChange={e => updateMark(s.code, Number(e.target.value))}
-                      />
-                      <button type="button" onClick={() => removeSubject(s.code)}
-                        className="text-slate-300 hover:text-red-500 text-lg leading-none">×</button>
-                    </div>
+                  <div key={s.code} className="grid grid-cols-[1fr,auto,auto] items-center gap-2 sm:gap-3">
+                    <p className="text-sm font-medium text-[#0F172A] truncate">{s.name}</p>
+                    <Input
+                      type="number" min={0} max={100}
+                      className="h-9 w-16 sm:w-20 text-center"
+                      placeholder="%"
+                      value={s.mark || ""}
+                      onChange={e => updateMark(s.code, Number(e.target.value))}
+                    />
+                    <button type="button" onClick={() => removeSubject(s.code)}
+                      className="p-1 text-slate-300 hover:text-red-500 text-lg leading-none"
+                      aria-label={`Remove ${s.name}`}>
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
