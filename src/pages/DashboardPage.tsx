@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { getProfile, getApplications, type Profile, type Application } from "@/lib/supabase-helpers";
+import { matchCareers, CAREERS, type Career } from "@/data/careers";
 
 const QUICK_ACTIONS = [
   { href: "/careers", icon: Search, label: "Career Match", desc: "Find careers that suit you", color: "bg-[#E8F5F3] text-[#006B5E]" },
@@ -26,6 +27,7 @@ export function DashboardPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [matchedCareers, setMatchedCareers] = useState<Career[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +35,17 @@ export function DashboardPage() {
     Promise.all([getProfile(user.id), getApplications(user.id)]).then(([p, apps]) => {
       setProfile(p);
       setApplications(apps);
+      
+      if (p) {
+        const matches = matchCareers({
+          apsScore: p.aps_score ?? 0,
+          subjects: (p.subjects ?? []).map((s: { code: string }) => s.code),
+          personalityType: p.personality_type ?? "",
+          preferredFields: p.preferred_fields ?? [],
+        });
+        setMatchedCareers(matches.slice(0, 3));
+      }
+      
       setLoading(false);
     });
   }, [user]);
@@ -118,6 +131,35 @@ export function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* Recommended Careers */}
+      {profile?.onboarding_complete && matchedCareers.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-[#0F172A]">Recommended Careers for You</h2>
+            <Button asChild variant="ghost" size="sm" className="text-[#006B5E]">
+              <Link href="/careers">View all matches</Link>
+            </Button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {matchedCareers.map(career => (
+              <Link key={career.id} href="/careers">
+                <a className="cp-card flex flex-col p-4 hover:border-[#006B5E]/50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-sm font-bold text-[#0F172A] line-clamp-1">{career.title}</p>
+                    <Sparkles className="size-3 text-[#006B5E] shrink-0" />
+                  </div>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-3">{career.field}</p>
+                  <div className="mt-auto flex items-center justify-between">
+                    <span className="text-[10px] bg-[#E8F5F3] text-[#006B5E] px-2 py-0.5 rounded-full font-bold">MATCH</span>
+                    <ArrowRight className="size-3 text-slate-400" />
+                  </div>
+                </a>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming Deadlines */}

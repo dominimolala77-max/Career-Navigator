@@ -63,7 +63,7 @@ export function FundingPage() {
     toast({ title: "NSFAS application saved" });
   }
 
-  async function handleBursaryApply() {
+  async function handleBursaryApply(openBrowser: boolean = false) {
     if (!user || !applyingBursary) return;
     setSavingBursary(true);
     const app = await createApplication(user.id, {
@@ -80,8 +80,13 @@ export function FundingPage() {
     setSavingBursary(false);
     if (app) {
       toast({ title: "Bursary application started!" });
-      setApplyingBursary(null);
-      navigate("/applications");
+      if (openBrowser) {
+        setBrowserUrl({ url: applyingBursary.applicationUrl, title: applyingBursary.name });
+        setApplyingBursary(null);
+      } else {
+        setApplyingBursary(null);
+        navigate("/applications");
+      }
     } else {
       toast({ title: "Failed to save", variant: "destructive" });
     }
@@ -306,7 +311,7 @@ export function FundingPage() {
                 </div>
                 <Button size="sm" onClick={() => setApplyingBursary(b)} disabled={b.status === "closed"}
                   className={b.status === "closed" ? "w-full" : "w-full bg-[#006B5E] hover:bg-[#005548] text-white"}>
-                  {b.status === "closed" ? "Applications Closed" : "Track Application"}
+                  {b.status === "closed" ? "Applications Closed" : "Apply Now"}
                 </Button>
               </div>
             ))}
@@ -339,13 +344,14 @@ export function FundingPage() {
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                Submit your final application at: <button type="button" onClick={() => setBrowserUrl({ url: applyingBursary.applicationUrl, title: applyingBursary.name })} className="font-semibold underline text-left break-all">{applyingBursary.applicationUrl}</button>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                <p className="font-semibold mb-1">📌 How to apply</p>
+                <p>Click <strong>"Apply Now"</strong> to open the official bursary portal inside the app. We will also automatically add this to your application tracker.</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4">
                 <Button variant="outline" className="flex-1" onClick={() => setApplyingBursary(null)}>Cancel</Button>
-                <Button onClick={handleBursaryApply} disabled={savingBursary} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
-                  {savingBursary ? "Saving…" : "Add to Tracker"}
+                <Button onClick={() => handleBursaryApply(true)} disabled={savingBursary} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
+                  {savingBursary ? "Saving…" : "Apply Now"} <ExternalLink className="size-3" />
                 </Button>
               </div>
             </div>

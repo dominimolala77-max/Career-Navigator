@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, ExternalLink, GraduationCap, Search } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { createApplication } from "@/lib/supabase-helpers";
+import { createApplication, getProfile, type Profile } from "@/lib/supabase-helpers";
 import { UNIVERSITIES, PROVINCES, type Institution } from "@/data/universities";
 import { useToast } from "@/hooks/use-toast";
 import { InAppBrowser } from "@/components/ui/in-app-browser";
@@ -28,6 +28,10 @@ export function UniversitiesPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
+  const searchString = useSearch();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [showRecommended, setShowRecommended] = useState(false);
+
   const [search, setSearch] = useState("");
   const [province, setProvince] = useState("All");
   const [type, setType] = useState("All");
@@ -39,15 +43,41 @@ export function UniversitiesPage() {
   const [deadline, setDeadline] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!user) return;
+    getProfile(user.id).then(p => {
+      setProfile(p);
+      if (p?.aps_score) {
+        setShowRecommended(true);
+      }
+    });
+  }, [user]);
+
+  // Handle field query param from Career Match page
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const fieldParam = params.get("field");
+    if (fieldParam) {
+      setSearch(fieldParam);
+    }
+  }, [searchString]);
+
   const displayed = UNIVERSITIES.filter(u => {
     if (province !== "All" && u.province !== province) return false;
     if (type !== "All" && u.type !== type) return false;
     if (apsFilter && u.minAps > Number(apsFilter)) return false;
-    if (search && !u.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
+    if (showRecommended && profile?.aps_score && u.minAps > profile.aps_score) return false;
+    
+    const searchLower = search.toLowerCase();
+    const matchesSearch = !search || 
+      u.name.toLowerCase().includes(searchLower) || 
+      u.province.toLowerCase().includes(searchLower) ||
+      u.programmes.some(p => p.name.toLowerCase().includes(searchLower) || p.faculty.toLowerCase().includes(searchLower));
+    
+    return matchesSearch;
   });
 
-  async function handleApply() {
+  async function handleApply(openBrowser: boolean = false) {
     if (!user || !applying) return;
     setSaving(true);
     const app = await createApplication(user.id, {
@@ -69,10 +99,17 @@ export function UniversitiesPage() {
     setSaving(false);
     if (app) {
       toast({ title: "Application started!", description: `${applying.name} added to your tracker.` });
-      setApplying(null);
-      setProgramme("");
-      setDeadline("");
-      navigate("/applications");
+      if (openBrowser) {
+        setBrowserUrl({ url: applying.applicationUrl, title: applying.name });
+        setApplying(null);
+        setProgramme("");
+        setDeadline("");
+      } else {
+        setApplying(null);
+        setProgramme("");
+        setDeadline("");
+        navigate("/applications");
+      }
     } else {
       toast({ title: "Failed to save application", variant: "destructive" });
     }
@@ -106,9 +143,24 @@ export function UniversitiesPage() {
           </select>
         ))}
         <Input className="h-10 w-32" placeholder="Min APS" type="number" value={apsFilter} onChange={e => setApsFilter(e.target.value)} />
+        
+        {profile?.aps_score && (
+          <Button 
+            variant={showRecommended ? "default" : "outline"}
+            className={showRecommended ? "bg-[#006B5E] text-white" : ""}
+            onClick={() => setShowRecommended(!showRecommended)}
+          >
+            {showRecommended ? "Recommended: ON" : "Recommended for Me"}
+          </Button>
+        )}
       </div>
 
-      <p className="text-sm text-slate-500">{displayed.length} institution{displayed.length !== 1 ? "s" : ""} found</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500">{displayed.length} institution{displayed.length !== 1 ? "s" : ""} found</p>
+        {profile?.aps_score && showRecommended && (
+          <p className="text-xs text-[#006B5E] font-medium">Filtered by your APS ({profile.aps_score})</p>
+        )}
+      </div>
 
       {/* Grid */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -116,8 +168,11 @@ export function UniversitiesPage() {
           <div key={u.id} className="cp-card flex flex-col p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="mb-1">
+                <div className="flex items-center gap-2 mb-1">
                   <span className={TYPE_COLORS[u.type]}>{TYPE_LABELS[u.type]}</span>
+                  {profile?.aps_score && u.minAps <= profile.aps_score && (
+                    <span className="bg-[#E8F5F3] text-[#006B5E] text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-[#006B5E]/20">MATCH</span>
+                  )}
                 </div>
                 <h3 className="font-bold text-[#0F172A]">{u.name}</h3>
                 <p className="text-xs text-slate-500">{u.province}</p>
@@ -207,8 +262,8 @@ export function UniversitiesPage() {
             </div>
             <div className="p-6 grid gap-4">
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                <p className="font-semibold mb-1">📌 How this works</p>
-                <p>We'll track your application in-app. The final application must be submitted on the official portal below.</p>
+                <p className="font-semibold mb-1">📌 How to apply</p>
+                <p>Click <strong>"Apply Now"</strong> to open the official university portal inside the app. We will also automatically add this to your application tracker.</p>
               </div>
 
               <div>
@@ -226,18 +281,10 @@ export function UniversitiesPage() {
                 <Input type="date" className="mt-1.5 h-11" value={deadline} onChange={e => setDeadline(e.target.value)} />
               </div>
 
-              <div>
-                <p className="text-sm font-semibold text-[#0F172A] mb-1">Official Application Portal</p>
-                <button type="button" onClick={() => setBrowserUrl({ url: applying.applicationUrl, title: applying.name })} className="text-sm text-[#006B5E] underline text-left break-all">
-                  {applying.applicationUrl}
-                </button>
-                <p className="mt-1 text-xs text-slate-400">Remember to return here and save your application to track it.</p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-4">
                 <Button variant="outline" className="flex-1" onClick={() => setApplying(null)}>Cancel</Button>
-                <Button onClick={handleApply} disabled={saving || !programme} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
-                  {saving ? "Saving…" : "Start Tracking"}
+                <Button onClick={() => handleApply(true)} disabled={saving || !programme} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
+                  {saving ? "Saving…" : "Apply Now"} <ExternalLink className="size-3" />
                 </Button>
               </div>
             </div>
