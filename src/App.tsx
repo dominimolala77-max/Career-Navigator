@@ -9,6 +9,7 @@ import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { SignupPage } from "@/pages/SignupPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
+import PaymentReturnPage from "@/pages/PaymentReturnPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { CareerRecommendationsPage } from "@/pages/CareerRecommendationsPage";
 import { UniversitiesPage } from "@/pages/UniversitiesPage";
@@ -16,6 +17,7 @@ import { FundingPage } from "@/pages/FundingPage";
 import { OpportunitiesPage } from "@/pages/OpportunitiesPage";
 import { ApplicationsPage } from "@/pages/ApplicationsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { PlansPage } from "@/pages/PlansPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 function getBasePath(): string {
@@ -34,6 +36,11 @@ function App() {
             <Route path="/onboarding">
               <RequireAuth>
                 <OnboardingPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/payment/success">
+              <RequireAuth>
+                <PaymentReturnPage />
               </RequireAuth>
             </Route>
             <Route path="/dashboard">
@@ -64,6 +71,11 @@ function App() {
             <Route path="/applications">
               <RequireAuth>
                 <ApplicationsPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/plans">
+              <RequireAuth>
+                <PlansPage />
               </RequireAuth>
             </Route>
             <Route path="/profile">

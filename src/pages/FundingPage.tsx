@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, ExternalLink, FileText, Shield, Wallet } from "lucide-react";
-import { useLocation } from "wouter";
+import { AlertCircle, CheckCircle2, FileText, Shield, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { getProfile, getNsfasApplication, upsertNsfasApplication, createApplication, type Profile } from "@/lib/supabase-helpers";
+import { getProfile, getNsfasApplication, upsertNsfasApplication, createApplication, getApplications, updateApplication, type Profile } from "@/lib/supabase-helpers";
 import { BURSARIES, type Bursary } from "@/data/bursaries";
 import { useToast } from "@/hooks/use-toast";
-import { InAppBrowser } from "@/components/ui/in-app-browser";
 
 const SA_PROVINCES = ["Eastern Cape","Free State","Gauteng","KwaZulu-Natal","Limpopo","Mpumalanga","Northern Cape","North West","Western Cape"];
 
@@ -31,7 +29,6 @@ const STATUS_LABELS: Record<string, string> = { open: "Open", closed: "Closed", 
 export function FundingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const [tab, setTab] = useState<"nsfas" | "bursaries">("nsfas");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [nsfasData, setNsfasData] = useState<Record<string, unknown>>({});
@@ -40,7 +37,6 @@ export function FundingPage() {
   const [applyingBursary, setApplyingBursary] = useState<Bursary | null>(null);
   const [bursaryDeadline, setBursaryDeadline] = useState("");
   const [savingBursary, setSavingBursary] = useState(false);
-  const [browserUrl, setBrowserUrl] = useState<{url: string, title: string} | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -59,34 +55,51 @@ export function FundingPage() {
     const merged = { ...nsfasData, ...updates };
     setNsfasData(merged);
     await upsertNsfasApplication(user.id, merged);
+    const existingApplications = await getApplications(user.id);
+    const existingNsfas = existingApplications.find(app => app.type === "nsfas");
+    const trackerData = {
+      type: "nsfas" as const,
+      institution: "NSFAS",
+      programme: (merged["intended_qualification"] as string) || "Student funding",
+      status: "todo" as const,
+      amount: "Full cost of study if approved",
+      documents: NSFAS_DOCS.map(doc => ({
+        name: doc.label,
+        uploaded: Boolean(merged[doc.key]),
+        required: true,
+      })),
+      notes: "Saved for managed NSFAS submission by CareerPath SA.",
+      priority: "high" as const,
+      province: (merged["province"] as string) || profile?.province,
+      form_data: merged,
+    };
+    if (existingNsfas) {
+      await updateApplication(existingNsfas.id, trackerData);
+    } else {
+      await createApplication(user.id, trackerData);
+    }
     setSavingNsfas(false);
-    toast({ title: "NSFAS application saved" });
+    toast({ title: "NSFAS details saved", description: "Your NSFAS submission request is now in the tracker." });
   }
 
-  async function handleBursaryApply(openBrowser: boolean = false) {
+  async function handleBursaryApply() {
     if (!user || !applyingBursary) return;
     setSavingBursary(true);
     const app = await createApplication(user.id, {
       type: "bursary",
       institution: applyingBursary.provider,
       programme: applyingBursary.name,
-      status: "in_progress",
+      status: "todo",
       deadline: bursaryDeadline || undefined,
       amount: applyingBursary.amount,
       documents: applyingBursary.documents.map(d => ({ name: d, uploaded: false, required: true })),
-      notes: `Bursary: ${applyingBursary.name}`,
+      notes: `Requested managed bursary submission for ${applyingBursary.name}. Official portal: ${applyingBursary.applicationUrl}`,
       priority: "medium",
     });
     setSavingBursary(false);
     if (app) {
-      toast({ title: "Bursary application started!" });
-      if (openBrowser) {
-        setBrowserUrl({ url: applyingBursary.applicationUrl, title: applyingBursary.name });
-        setApplyingBursary(null);
-      } else {
-        setApplyingBursary(null);
-        navigate("/applications");
-      }
+      toast({ title: "Bursary request saved", description: `${applyingBursary.name} was added for managed submission.` });
+      setApplyingBursary(null);
     } else {
       toast({ title: "Failed to save", variant: "destructive" });
     }
@@ -102,7 +115,7 @@ export function FundingPage() {
       <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
         <div className="cp-section-label mb-2">Funding Centre</div>
         <h1 className="text-2xl font-extrabold text-[#0F172A]">NSFAS & Bursaries</h1>
-        <p className="mt-1 text-sm text-slate-500">Apply for NSFAS and track bursaries all in one place. Your data is pre-filled from your profile.</p>
+        <p className="mt-1 text-sm text-slate-500">Prepare NSFAS and bursary details in one place. Your data is pre-filled from your profile so we can manage submissions for you.</p>
       </div>
 
       {/* Tabs */}
@@ -110,7 +123,7 @@ export function FundingPage() {
         {(["nsfas", "bursaries"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors capitalize ${tab === t ? "border-[#006B5E] text-[#006B5E]" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
-            {t === "nsfas" ? "NSFAS Application" : "Bursaries"}
+            {t === "nsfas" ? "NSFAS Details" : "Bursaries"}
           </button>
         ))}
       </div>
@@ -143,15 +156,15 @@ export function FundingPage() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
             <Shield className="size-4 text-amber-600 mt-0.5 shrink-0" />
             <p className="text-xs text-amber-800">
-              <strong>Important:</strong> CareerPath SA helps you prepare your NSFAS application. Your final application MUST be submitted on the official NSFAS website at <strong>nsfas.org.za</strong>. This in-app form stores your information securely and helps you stay organised.
+              <strong>Important:</strong> Complete and save these NSFAS details so CareerPath SA can prepare your managed submission. Keep your information and documents accurate before we submit.
             </p>
           </div>
 
           {/* NSFAS Form */}
           <div className="rounded-2xl border border-border bg-white shadow-sm">
             <div className="border-b border-border px-6 py-4">
-              <h2 className="font-bold text-[#0F172A]">NSFAS Application Form</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Fill in and save — then submit on nsfas.org.za</p>
+              <h2 className="font-bold text-[#0F172A]">NSFAS Submission Details</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Fill in and save so we can prepare the NSFAS submission.</p>
             </div>
             <div className="p-6 grid gap-6">
               {/* Personal Details */}
@@ -261,10 +274,7 @@ export function FundingPage() {
 
               <div className="flex flex-wrap gap-3 border-t border-border pt-4">
                 <Button onClick={() => saveNsfas(nsfasData)} disabled={savingNsfas} className="bg-[#006B5E] hover:bg-[#005548] text-white">
-                  {savingNsfas ? "Saving…" : "Save Application"}
-                </Button>
-                <Button onClick={() => setBrowserUrl({ url: "https://my.nsfas.org.za/", title: "NSFAS Application Portal" })} variant="outline" className="gap-2">
-                  Submit on NSFAS.org.za <ExternalLink className="size-3" />
+                  {savingNsfas ? "Saving..." : "Save for Submission"}
                 </Button>
               </div>
             </div>
@@ -287,7 +297,7 @@ export function FundingPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredBursaries.map(b => (
-              <div key={b.id} className="cp-card p-5 flex flex-col gap-3">
+              <div key={b.id} className={`cp-card-hover p-5 flex flex-col gap-3 ${b.status === 'closed' ? 'cp-non-clickable' : 'cp-clickable'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-[#0F172A]">{b.name}</h3>
@@ -311,7 +321,7 @@ export function FundingPage() {
                 </div>
                 <Button size="sm" onClick={() => setApplyingBursary(b)} disabled={b.status === "closed"}
                   className={b.status === "closed" ? "w-full" : "w-full bg-[#006B5E] hover:bg-[#005548] text-white"}>
-                  {b.status === "closed" ? "Applications Closed" : "Apply Now"}
+                  {b.status === "closed" ? "Applications Closed" : "Request Submission"}
                 </Button>
               </div>
             ))}
@@ -345,13 +355,13 @@ export function FundingPage() {
                 </ul>
               </div>
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                <p className="font-semibold mb-1">📌 How to apply</p>
-                <p>Click <strong>"Apply Now"</strong> to open the official bursary portal inside the app. We will also automatically add this to your application tracker.</p>
+                <p className="font-semibold mb-1">Managed submission</p>
+                <p>Save this request so your completed profile and documents can be reviewed for a managed bursary submission.</p>
               </div>
               <div className="flex gap-3 pt-4">
                 <Button variant="outline" className="flex-1" onClick={() => setApplyingBursary(null)}>Cancel</Button>
-                <Button onClick={() => handleBursaryApply(true)} disabled={savingBursary} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
-                  {savingBursary ? "Saving…" : "Apply Now"} <ExternalLink className="size-3" />
+                <Button onClick={handleBursaryApply} disabled={savingBursary} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
+                  {savingBursary ? "Saving..." : "Save Request"}
                 </Button>
               </div>
             </div>
@@ -359,14 +369,23 @@ export function FundingPage() {
         </div>
       )}
 
-      {/* In-App Browser */}
-      {browserUrl && (
-        <InAppBrowser
-          url={browserUrl.url}
-          title={browserUrl.title}
-          onClose={() => setBrowserUrl(null)}
-        />
-      )}
+      {/* Data Security & POPIA Notice */}
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+        <div className="flex gap-3">
+          <Shield className="size-5 shrink-0 text-blue-600 mt-0.5" />
+          <div>
+            <p className="font-semibold text-blue-900 mb-2">Data Security & POPIA Compliance</p>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>✓ Your financial information (income, bank details) is encrypted and protected</li>
+              <li>✓ Sensitive documents (ID, payslips, bank statements) are used only for funding applications</li>
+              <li>✓ Information is processed in accordance with POPIA (Protection of Personal Information Act)</li>
+              <li>✓ You have the right to request access to, correct, or delete your information</li>
+              <li>✓ CareerPath SA does not share personal data with unauthorized third parties</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

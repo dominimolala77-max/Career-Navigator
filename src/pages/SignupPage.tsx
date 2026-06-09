@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { LocationPermissionModal } from "@/components/LocationPermissionModal";
+import { updateProfile, type LocationData } from "@/lib/supabase-helpers";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -18,26 +21,45 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function SignupPage() {
-  const { signUpWithEmailPassword, user } = useAuth();
+  const { signUpWithEmailPassword, user, setLocationData, accessTier } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "", confirm: "" } });
   const isSubmitting = form.formState.isSubmitting;
 
-  if (user) { navigate("/onboarding"); return null; }
+  if (user && accessTier) { navigate("/onboarding"); return null; }
 
   async function onSubmit(values: Values) {
     try {
       const data = await signUpWithEmailPassword({ email: values.email, password: values.password });
       if (!data?.session) {
         toast({ title: "Check your email", description: "We sent a confirmation link to your email. Click it to verify your account." });
+        // Still show location modal even if email needs verification
+        setShowLocationModal(true);
       } else {
         toast({ title: "Account created! Let's set up your profile." });
-        navigate("/onboarding");
+        // Show location modal before onboarding
+        setShowLocationModal(true);
       }
     } catch (e) {
       toast({ title: "Sign up failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     }
+  }
+
+  async function handleLocationGranted(location: LocationData, tier: "free" | "paid") {
+    setLocationData(location, tier);
+    if (user) {
+      await updateProfile(user.id, {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        province_detected: location.province,
+        access_tier: tier,
+        location_requested_at: new Date().toISOString(),
+      });
+    }
+    setShowLocationModal(false);
+    navigate("/onboarding");
   }
 
   return (
@@ -48,7 +70,7 @@ export function SignupPage() {
             <GraduationCap className="size-7" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#0F172A]">Create your account</h1>
-          <p className="mt-1 text-sm text-slate-500">Free · No credit card required</p>
+          <p className="mt-1 text-sm text-slate-500">Location-based access: free for rural areas, paid plans for urban</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
@@ -96,6 +118,13 @@ export function SignupPage() {
           </p>
         </div>
       </div>
+
+      {showLocationModal && (
+        <LocationPermissionModal
+          onLocationGranted={handleLocationGranted}
+          showSkip={false}
+        />
+      )}
     </div>
   );
 }

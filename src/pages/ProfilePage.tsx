@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, GraduationCap, Save, User } from "lucide-react";
+import { ArrowRight, CreditCard, FileText, GraduationCap, Save, User, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { getProfile, updateProfile, type Profile } from "@/lib/supabase-helpers";
+import { getApplications, getProfile, updateProfile, type Application, type Profile } from "@/lib/supabase-helpers";
 import { CAREER_FIELDS, PERSONALITY_TYPES } from "@/data/careers";
+import { PRICING_PLANS } from "@/data/plans";
 import { useToast } from "@/hooks/use-toast";
 
 const SA_PROVINCES = ["Eastern Cape","Free State","Gauteng","KwaZulu-Natal","Limpopo","Mpumalanga","Northern Cape","North West","Western Cape"];
@@ -15,6 +16,7 @@ export function ProfilePage() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"personal" | "academic" | "preferences">("personal");
@@ -36,7 +38,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    getProfile(user.id).then(p => {
+    Promise.all([getProfile(user.id), getApplications(user.id)]).then(([p, apps]) => {
       if (p) {
         setProfile(p);
         setFullName(p.full_name ?? "");
@@ -53,6 +55,7 @@ export function ProfilePage() {
         setFundingType(p.funding_type ?? "");
         setPreferredFields(p.preferred_fields ?? []);
       }
+      setApplications(apps);
       setLoading(false);
     });
   }, [user]);
@@ -79,6 +82,7 @@ export function ProfilePage() {
   }
 
   const personalityLabel = profile?.personality_type ? PERSONALITY_TYPES.find(p => p.id === profile.personality_type) : null;
+  const plan = PRICING_PLANS.find(p => p.id === profile?.selected_plan);
 
   if (loading) {
     return (
@@ -108,6 +112,7 @@ export function ProfilePage() {
             <div className="mt-2 flex flex-wrap gap-2">
               {profile?.aps_score ? <span className="cp-badge-amber">APS {profile.aps_score}</span> : null}
               {personalityLabel && <span className="cp-badge-blue">{personalityLabel.icon} {personalityLabel.label}</span>}
+              {plan && <span className="cp-badge-primary"><CreditCard className="size-3" /> {plan.name}</span>}
               {profile?.onboarding_complete
                 ? <span className="cp-badge-primary"><GraduationCap className="size-3" /> Profile Complete</span>
                 : <span className="cp-badge-amber">Profile Incomplete</span>}
@@ -154,6 +159,44 @@ export function ProfilePage() {
           )}
         </div>
       )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+          <p className="mb-3 flex items-center gap-2 font-bold text-[#0F172A]"><FileText className="size-4 text-[#006B5E]" /> Uploaded Documents</p>
+          {profile?.certified_documents?.length ? (
+            <div className="grid gap-2">
+              {profile.certified_documents.map((doc) => (
+                <div key={doc.type} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                  <span className="truncate text-slate-700">{doc.name}</span>
+                  <span className={doc.uploaded ? "cp-badge-primary" : "cp-badge-red"}>{doc.uploaded ? "Uploaded" : "Missing"}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No certified documents uploaded yet.</p>
+          )}
+        </div>
+        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+          <p className="mb-3 flex items-center gap-2 font-bold text-[#0F172A]"><GraduationCap className="size-4 text-blue-600" /> Selected Institutions</p>
+          {applications.filter(a => ["university", "tvet"].includes(a.type)).length ? (
+            <div className="grid gap-2">
+              {applications.filter(a => ["university", "tvet"].includes(a.type)).slice(0, 6).map((app) => (
+                <div key={app.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-[#0F172A]">{app.institution}</span>
+                    <span className={app.fee_payment_status === "paid" ? "cp-badge-primary" : app.fee_payment_status === "not_required" ? "cp-badge-blue" : "cp-badge-red"}>
+                      {app.fee_payment_status === "not_required" ? "R0" : app.fee_payment_status === "paid" ? "Paid" : "Unpaid"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs capitalize text-slate-500">{app.status.replace("_", " ")}{app.programme ? ` - ${app.programme}` : ""}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No selected universities or TVET colleges yet.</p>
+          )}
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border">
@@ -298,10 +341,27 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* Data Protection & Security */}
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 mb-4">
+        <div className="flex gap-3">
+          <AlertCircle className="size-5 shrink-0 text-blue-600 mt-0.5" />
+          <div>
+            <p className="font-semibold text-blue-900 mb-2">Data Protection & POPIA Compliance</p>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>✓ Your personal information is processed securely under POPIA (Protection of Personal Information Act)</li>
+              <li>✓ Data is used only for career guidance, applications, and support services</li>
+              <li>✓ Login credentials are encrypted and never shared</li>
+              <li>✓ You have the right to access, correct, or delete your data</li>
+              <li>✓ We comply with South African data protection regulations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       {/* Danger Zone */}
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-        <p className="font-semibold text-red-800 mb-1">Account Actions</p>
-        <p className="text-sm text-red-700 mb-4">Sign out of your account. Deleting your account will remove all data in accordance with POPIA.</p>
+        <p className="font-semibold text-red-800 mb-1">Account & Data Management</p>
+        <p className="text-sm text-red-700 mb-4">Sign out of your account or manage your data. Account deletion will remove all personal data in accordance with POPIA.</p>
         <div className="flex flex-wrap gap-3">
           <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-100" onClick={() => signOut()}>Sign Out</Button>
         </div>

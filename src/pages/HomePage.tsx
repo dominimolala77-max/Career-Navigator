@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/AuthProvider";
 
 const metrics = [
-  { label: "Active roles", value: "24", tone: "bg-teal-500" },
-  { label: "Interview rate", value: "38%", tone: "bg-amber-400" },
-  { label: "Follow-ups due", value: "6", tone: "bg-rose-400" },
+  { label: "Study paths", value: "25+", tone: "bg-teal-500" },
+  { label: "Universities", value: "26", tone: "bg-amber-400" },
+  { label: "Bursaries", value: "15+", tone: "bg-rose-400" },
 ];
 
 const stages = [
@@ -20,18 +20,18 @@ const stages = [
 const features = [
   {
     icon: Target,
-    title: "Priority roadmap",
-    description: "Convert career goals into focused weekly actions with clear next moves.",
+    title: "Profile-first roadmap",
+    description: "Turn learner details, subjects, interests, and funding needs into clear next steps.",
   },
   {
     icon: FileText,
-    title: "Application command center",
-    description: "Track companies, roles, notes, deadlines, contacts, and follow-up history.",
+    title: "Managed submission center",
+    description: "Track university, NSFAS, bursary, and opportunity requests from one place.",
   },
   {
     icon: TrendingUp,
     title: "Outcome intelligence",
-    description: "Spot what is working, tighten your pitch, and improve every application cycle.",
+    description: "Use profile data to improve university recommendations and application readiness.",
   },
 ];
 
@@ -49,7 +49,7 @@ const onboardingSteps = [
   {
     icon: CalendarCheck2,
     title: "Organise applications & funding",
-    description: "Track NSFAS, bursaries, learnerships and closing dates in one place.",
+    description: "Prepare NSFAS, bursaries, learnerships and closing dates in one place.",
   },
   {
     icon: Sparkles,
@@ -95,11 +95,11 @@ export function HomePage() {
 
           <div className="grid gap-5">
             <h1 className="max-w-4xl text-5xl font-semibold leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-              Find the role that changes your year.
+              Find the study path that changes your year.
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600">
-              Career Navigator turns scattered applications into a polished operating system for
-              strategy, follow-ups, interview prep, and momentum.
+              Career Navigator helps learners complete their profile, answer personality quizzes,
+              choose suitable courses, and get matched to universities while submissions are managed for them.
             </p>
           </div>
 
@@ -149,13 +149,13 @@ export function HomePage() {
 
               <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-white">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
-                  Stunning career vision
+                  Smart study guidance
                 </div>
                 <h2 className="max-w-sm text-4xl font-semibold leading-tight sm:text-5xl">
                   See the path ahead with confidence
                 </h2>
                 <p className="max-w-[24rem] text-sm leading-6 text-white/80">
-                  A bold, polished visual that captures the energy of smart career choices and fast-moving opportunities.
+                  A guided way to move from profile completion to university, NSFAS, and bursary submissions.
                 </p>
                 <div className="grid w-full grid-cols-3 gap-3 pt-6">
                   <div className="rounded-3xl border border-white/15 bg-white/10 p-3 text-left">
@@ -185,7 +185,7 @@ export function HomePage() {
               Start your guided South African career journey
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-              Build a complete profile, discover study pathways, match bursaries, and track every application in one place.
+              Build a complete profile, discover study pathways, match bursaries, and track every managed submission in one place.
             </p>
           </div>
           <div className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-950/5 p-5 text-slate-700">

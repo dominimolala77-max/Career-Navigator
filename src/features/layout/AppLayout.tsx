@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
-  BookOpen, Briefcase, GraduationCap, Home, LayoutDashboard,
+  BookOpen, Briefcase, CreditCard, GraduationCap, LayoutDashboard,
   LogOut, Menu, Search, User, Wallet, X,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -17,7 +17,8 @@ const NAV_ITEMS = [
   { href: "/universities", label: "Universities", icon: GraduationCap },
   { href: "/funding", label: "Funding", icon: Wallet },
   { href: "/opportunities", label: "Opportunities", icon: Briefcase },
-  { href: "/applications", label: "Applications", icon: BookOpen },
+  { href: "/applications", label: "Submissions", icon: BookOpen },
+  { href: "/plans", label: "Plans", icon: CreditCard },
   { href: "/profile", label: "Profile", icon: User },
 ];
 

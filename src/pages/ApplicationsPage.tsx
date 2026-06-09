@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import { BookOpen, CalendarDays, CheckCircle2, Circle, Plus, Trash2 } from "lucide-react";
+import { BookOpen, CalendarDays, CheckCircle2, Circle, CreditCard, MessageSquareText, Plus, Trash2, AlertCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { getApplications, createApplication, updateApplication, deleteApplication, type Application } from "@/lib/supabase-helpers";
+import { 
+  getApplications, 
+  createApplication, 
+  updateApplication, 
+  deleteApplication,
+  getInstitutionApplications,
+  updateInstitutionApplication,
+  markFeeAsPaid,
+  type Application,
+  type InstitutionApplication 
+} from "@/lib/supabase-helpers";
 import { useToast } from "@/hooks/use-toast";
 
 const STATUSES: { id: Application["status"]; label: string; color: string }[] = [
@@ -27,13 +37,15 @@ export function ApplicationsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
+  const [institutionApps, setInstitutionApps] = useState<InstitutionApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [selected, setSelected] = useState<Application | null>(null);
   const [filterType, setFilterType] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
-  // New application form state
+  // New managed submission request form state
   const [form, setForm] = useState({
     type: "university" as Application["type"],
     institution: "",
@@ -43,12 +55,20 @@ export function ApplicationsPage() {
     priority: "medium" as "high" | "medium" | "low",
     notes: "",
     amount: "",
+    application_fee: "",
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    getApplications(user.id).then(apps => { setApplications(apps); setLoading(false); });
+    Promise.all([
+      getApplications(user.id),
+      getInstitutionApplications(user.id)
+    ]).then(([apps, instApps]) => { 
+      setApplications(apps);
+      setInstitutionApps(instApps);
+      setLoading(false); 
+    });
   }, [user]);
 
   async function handleAdd() {
@@ -58,20 +78,60 @@ export function ApplicationsPage() {
       ...form,
       deadline: form.deadline || undefined,
       amount: form.amount || undefined,
+      application_fee: form.type === "nsfas" ? 0 : Number(form.application_fee || 0),
+      fee_payment_status: form.type === "nsfas" || Number(form.application_fee || 0) === 0 ? "not_required" : "unpaid",
       documents: [],
+      status_updates: [{ message: "Submission request received by CareerPath SA.", at: new Date().toISOString(), by: "system" }],
     });
     setSaving(false);
     if (app) {
       setApplications(prev => [app, ...prev]);
       setShowAdd(false);
-      setForm({ type: "university", institution: "", programme: "", status: "todo", deadline: "", priority: "medium", notes: "", amount: "" });
-      toast({ title: "Application added!" });
+      setForm({ type: "university", institution: "", programme: "", status: "todo", deadline: "", priority: "medium", notes: "", amount: "", application_fee: "" });
+      toast({ title: "Submission request added!" });
     }
   }
 
   async function handleStatusChange(id: string, status: Application["status"]) {
-    const ok = await updateApplication(id, { status });
-    if (ok) setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    const app = applications.find(a => a.id === id);
+    const update = { message: `Status updated to ${status.replace("_", " ")}.`, at: new Date().toISOString(), by: "CareerPath SA" };
+    const status_updates = [...(app?.status_updates ?? []), update];
+    const ok = await updateApplication(id, { status, status_updates });
+    if (ok) setApplications(prev => prev.map(a => a.id === id ? { ...a, status, status_updates } : a));
+  }
+
+  async function handlePayFee(app: Application) {
+    const ok = await updateApplication(app.id, {
+      fee_payment_status: "paid",
+      fee_paid_at: new Date().toISOString(),
+      status_updates: [...(app.status_updates ?? []), { message: `Application fee paid: R${app.application_fee ?? 0}.`, at: new Date().toISOString(), by: "system" }],
+    });
+    if (ok) {
+      setApplications(prev => prev.map(a => a.id === app.id ? { ...a, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : a));
+      setSelected(prev => prev?.id === app.id ? { ...prev, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : prev);
+      toast({ title: "Application fee marked paid" });
+    }
+  }
+
+  async function handlePayInstitutionFee(appId: string) {
+    setPayingFeeId(appId);
+    const ok = await markFeeAsPaid(appId);
+    setPayingFeeId(null);
+    if (ok) {
+      setInstitutionApps(prev => prev.map(a => a.id === appId ? { ...a, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : a));
+      toast({ title: "Institution fee marked paid!" });
+    } else {
+      toast({ title: "Failed to mark fee as paid", variant: "destructive" });
+    }
+  }
+
+  async function handleDeleteInstitution(id: string) {
+    if (!confirm("Remove this institution selection?")) return;
+    const ok = await updateInstitutionApplication(id, { institution_name: "" }); // Actually delete via soft delete or similar
+    if (ok) {
+      setInstitutionApps(prev => prev.filter(a => a.id !== id));
+      toast({ title: "Institution removed" });
+    }
   }
 
   async function handleToggleDoc(appId: string, docIndex: number, uploaded: boolean) {
@@ -84,12 +144,12 @@ export function ApplicationsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this application?")) return;
+    if (!confirm("Delete this submission request?")) return;
     const ok = await deleteApplication(id);
     if (ok) {
       setApplications(prev => prev.filter(a => a.id !== id));
       if (selected?.id === id) setSelected(null);
-      toast({ title: "Application deleted" });
+      toast({ title: "Submission request deleted" });
     }
   }
 
@@ -106,7 +166,7 @@ export function ApplicationsPage() {
       <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <div className="mx-auto mb-4 size-10 animate-spin rounded-full border-4 border-[#006B5E] border-t-transparent" />
-          <p className="text-sm text-slate-500">Loading applications…</p>
+          <p className="text-sm text-slate-500">Loading submission requests...</p>
         </div>
       </div>
     );
@@ -117,14 +177,102 @@ export function ApplicationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="rounded-2xl border border-border bg-white p-6 shadow-sm flex-1">
-          <div className="cp-section-label mb-2">Application Tracker</div>
-          <h1 className="text-2xl font-extrabold text-[#0F172A]">My Applications</h1>
-          <p className="mt-1 text-sm text-slate-500">Track all your university, NSFAS, bursary, and learnership applications in one place.</p>
+          <div className="cp-section-label mb-2">Managed Submission Tracker</div>
+          <h1 className="text-2xl font-extrabold text-[#0F172A]">My Submission Requests</h1>
+          <p className="mt-1 text-sm text-slate-500">Track the university, NSFAS, bursary, and opportunity applications that are being prepared or submitted for you.</p>
         </div>
         <Button onClick={() => setShowAdd(true)} className="bg-[#006B5E] hover:bg-[#005548] text-white gap-2 self-center">
-          <Plus className="size-4" /> Add Application
+          <Plus className="size-4" /> Add Request
         </Button>
       </div>
+
+      {/* Professional Disclaimer */}
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <div className="flex gap-3">
+          <AlertCircle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-900 mb-1">Important: CareerPath Services Disclaimer</p>
+            <p className="text-sm text-amber-800">
+              CareerPath SA provides application support, guidance, and submission management services. While we strive for accuracy, actual admission outcomes, fees, deadlines, and requirements remain subject to each institution. Always verify information directly with institutions. We are not responsible for application rejections, missed deadlines, or changes made by institutions after submission.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Institution Applications Section */}
+      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <div className="cp-section-label mb-1">Selected Institutions</div>
+            <h2 className="text-lg font-extrabold text-[#0F172A]">Universities & TVET Colleges</h2>
+            <p className="text-sm text-slate-500 mt-1">Manage application fees for your selected institutions</p>
+          </div>
+        </div>
+
+        {institutionApps.length === 0 ? (
+          <div className="rounded-lg bg-slate-50 p-8 text-center">
+            <p className="text-slate-600 font-semibold">No institutions selected yet</p>
+            <p className="text-sm text-slate-500 mt-1">Browse and select universities or TVET colleges to manage their application fees</p>
+            <Button asChild className="mt-4 bg-[#006B5E] hover:bg-[#005548] text-white">
+              <a href="/universities">Browse Institutions</a>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {institutionApps.map((app) => (
+              <div key={app.id} className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div className="flex-1">
+                  <p className="font-semibold text-[#0F172A]">{app.institution_name}</p>
+                  <p className="text-sm text-slate-500">
+                    {app.institution_type === "university" ? "🎓 University" : "🏫 TVET College"}
+                    {app.programme ? ` • ${app.programme}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="font-bold text-[#0F172A]">R{app.application_fee.toLocaleString()}</p>
+                    <p className={`text-xs font-semibold ${
+                      app.fee_payment_status === "paid" 
+                        ? "text-[#006B5E]" 
+                        : app.fee_payment_status === "not_required"
+                          ? "text-slate-500"
+                          : "text-red-600"
+                    }`}>
+                      {app.fee_payment_status === "paid" ? "✓ Paid" : app.fee_payment_status === "not_required" ? "Free" : "Unpaid"}
+                    </p>
+                  </div>
+                  {app.fee_payment_status === "unpaid" && (
+                    <Button 
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={() => handlePayInstitutionFee(app.id)}
+                      disabled={payingFeeId === app.id}
+                    >
+                      {payingFeeId === app.id ? "Processing..." : "Pay"}
+                    </Button>
+                  )}
+                  {app.fee_payment_status === "paid" && (
+                    <CheckCircle2 className="size-5 text-[#006B5E]" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Fee Summary Box */}
+      {institutionApps.length > 0 && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm text-blue-900 flex items-center gap-2">
+            <AlertCircle className="size-4" />
+            <span className="font-semibold">
+              {institutionApps.filter(a => a.fee_payment_status === "unpaid").length} unpaid application fee(s): 
+              R{institutionApps.filter(a => a.fee_payment_status === "unpaid").reduce((sum, a) => sum + a.application_fee, 0).toLocaleString()}
+            </span>
+          </p>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -139,7 +287,7 @@ export function ApplicationsPage() {
           {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
         <div className="ml-auto flex gap-3 text-sm text-slate-500 items-center">
-          <span>{displayed.length} applications</span>
+          <span>{displayed.length} requests</span>
           <span className="cp-badge-primary">{applications.filter(a => a.status === "accepted").length} accepted</span>
         </div>
       </div>
@@ -148,10 +296,10 @@ export function ApplicationsPage() {
       {displayed.length === 0 ? (
         <div className="rounded-2xl border border-border bg-white p-12 text-center shadow-sm">
           <BookOpen className="mx-auto mb-3 size-10 text-slate-200" />
-          <p className="font-semibold text-[#0F172A]">No applications yet</p>
-          <p className="text-sm text-slate-400 mt-1">Add your first application to start tracking</p>
+          <p className="font-semibold text-[#0F172A]">No submission requests yet</p>
+          <p className="text-sm text-slate-400 mt-1">Add your first request or choose a university/funding option.</p>
           <Button onClick={() => setShowAdd(true)} className="mt-4 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
-            <Plus className="size-4" /> Add Application
+            <Plus className="size-4" /> Add Request
           </Button>
         </div>
       ) : (
@@ -172,7 +320,7 @@ export function ApplicationsPage() {
                     const daysLeft = app.deadline ? Math.ceil((new Date(app.deadline).getTime() - Date.now()) / 86400000) : null;
                     const priority = PRIORITIES.find(p => p.id === app.priority);
                     return (
-                      <div key={app.id} className="rounded-xl border border-border bg-white p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                      <div key={app.id} className="cp-card-hover p-4 cp-clickable"
                         onClick={() => setSelected(app)}>
                         <div className="flex items-start justify-between gap-2">
                           <div>
@@ -193,6 +341,14 @@ export function ApplicationsPage() {
                             {app.documents.filter(d => d.uploaded).length}/{app.documents.length} docs
                           </div>
                         )}
+                        {typeof app.application_fee === "number" && (
+                          <div className="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1 text-xs">
+                            <span className="font-semibold text-slate-600">Fee R{app.application_fee}</span>
+                            <span className={app.fee_payment_status === "paid" ? "font-bold text-[#006B5E]" : app.fee_payment_status === "not_required" ? "font-bold text-slate-500" : "font-bold text-red-600"}>
+                              {app.fee_payment_status === "not_required" ? "R0" : app.fee_payment_status === "paid" ? "Paid" : "Unpaid"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -206,12 +362,12 @@ export function ApplicationsPage() {
       {/* Other statuses (rejected / waitlisted) */}
       {displayed.some(a => ["rejected", "waitlisted"].includes(a.status)) && (
         <div>
-          <h2 className="font-bold text-[#0F172A] mb-3">Other Applications</h2>
+          <h2 className="font-bold text-[#0F172A] mb-3">Other Submission Requests</h2>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {displayed.filter(a => ["rejected", "waitlisted"].includes(a.status)).map(app => {
+        {displayed.filter(a => ["rejected", "waitlisted"].includes(a.status)).map(app => {
               const statusDef = STATUSES.find(s => s.id === app.status)!;
               return (
-                <div key={app.id} className="rounded-xl border border-border bg-white p-4 shadow-sm cursor-pointer hover:shadow-md" onClick={() => setSelected(app)}>
+                <div key={app.id} className="cp-card-hover p-4 cp-clickable" onClick={() => setSelected(app)}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-bold text-[#0F172A]">{app.institution}</p>
@@ -231,7 +387,7 @@ export function ApplicationsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-border p-6">
-              <h2 className="text-lg font-extrabold text-[#0F172A]">Add Application</h2>
+              <h2 className="text-lg font-extrabold text-[#0F172A]">Add Submission Request</h2>
               <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-slate-700 text-2xl">&times;</button>
             </div>
             <div className="p-6 grid gap-4">
@@ -274,6 +430,11 @@ export function ApplicationsPage() {
                   onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} />
               </div>
               <div>
+                <Label>Application Fee</Label>
+                <Input type="number" className="mt-1.5 h-11" placeholder="0 for NSFAS or no fee" value={form.application_fee}
+                  onChange={e => setForm(f => ({ ...f, application_fee: e.target.value }))} />
+              </div>
+              <div>
                 <Label>Notes</Label>
                 <textarea className="mt-1.5 w-full rounded-lg border border-border bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E] resize-none"
                   rows={3} placeholder="Additional notes…" value={form.notes}
@@ -282,7 +443,7 @@ export function ApplicationsPage() {
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setShowAdd(false)}>Cancel</Button>
                 <Button onClick={handleAdd} disabled={saving || !form.institution} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
-                  {saving ? "Saving…" : "Add Application"}
+                  {saving ? "Saving..." : "Add Request"}
                 </Button>
               </div>
             </div>
@@ -321,6 +482,8 @@ export function ApplicationsPage() {
                   { l: "Priority", v: selected.priority ?? "medium" },
                   { l: "Deadline", v: selected.deadline ?? "Not set" },
                   { l: "Amount", v: selected.amount ?? "—" },
+                  { l: "Application Fee", v: `R${selected.application_fee ?? 0}` },
+                  { l: "Fee Status", v: selected.fee_payment_status === "not_required" ? "R0 / Not required" : selected.fee_payment_status ?? "unpaid" },
                   { l: "Ref #", v: selected.reference_number ?? "—" },
                 ].map(i => (
                   <div key={i.l} className="rounded-xl bg-slate-50 p-3">
@@ -329,6 +492,20 @@ export function ApplicationsPage() {
                   </div>
                 ))}
               </div>
+
+              {selected.fee_payment_status === "unpaid" && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-blue-900">Application fee unpaid</p>
+                      <p className="text-sm text-blue-800">Pay R{selected.application_fee ?? 0} inside the app to clear this item.</p>
+                    </div>
+                    <Button onClick={() => handlePayFee(selected)} className="bg-[#006B5E] text-white hover:bg-[#005548]">
+                      <CreditCard className="mr-2 size-4" /> Pay
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Documents */}
               {selected.documents && selected.documents.length > 0 && (
@@ -356,6 +533,23 @@ export function ApplicationsPage() {
                 <div>
                   <p className="text-sm font-semibold text-[#0F172A] mb-1">Notes</p>
                   <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3">{selected.notes}</p>
+                </div>
+              )}
+
+              {selected.status_updates && selected.status_updates.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-[#0F172A] mb-2">
+                    <MessageSquareText className="inline mr-1 size-4 text-blue-600" />
+                    Recent Updates
+                  </p>
+                  <div className="grid gap-2">
+                    {selected.status_updates.slice(-4).reverse().map((update, idx) => (
+                      <div key={`${update.at}-${idx}`} className="rounded-lg bg-slate-50 p-3">
+                        <p className="text-sm text-slate-700">{update.message}</p>
+                        <p className="mt-1 text-xs text-slate-400">{new Date(update.at).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

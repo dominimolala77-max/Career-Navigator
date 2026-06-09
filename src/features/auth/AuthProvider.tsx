@@ -10,11 +10,15 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "./supabaseClient";
+import type { LocationData } from "@/lib/location";
 
 type AuthContextValue = {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  locationData: LocationData | null;
+  accessTier: "free" | "paid" | null;
+  locationRequired: boolean;
   signUpWithEmailPassword: (args: {
     email: string;
     password: string;
@@ -24,6 +28,7 @@ type AuthContextValue = {
     password: string;
   }) => Promise<void>;
   signOut: () => Promise<void>;
+  setLocationData: (location: LocationData, tier: "free" | "paid") => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -32,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationData, setLocationDataState] = useState<LocationData | null>(null);
+  const [accessTier, setAccessTier] = useState<"free" | "paid" | null>(null);
+  const [locationRequired, setLocationRequired] = useState(false);
 
   useEffect(() => {
     const client = supabase;
@@ -107,18 +115,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    setLocationDataState(null);
+    setAccessTier(null);
   }, []);
+
+  const handleSetLocationData = useCallback(
+    (location: LocationData, tier: "free" | "paid") => {
+      setLocationDataState(location);
+      setAccessTier(tier);
+      setLocationRequired(false);
+      // Save to localStorage for persistence
+      localStorage.setItem("location_data", JSON.stringify(location));
+      localStorage.setItem("access_tier", tier);
+    },
+    []
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       session,
       isLoading,
+      locationData,
+      accessTier,
+      locationRequired,
       signUpWithEmailPassword,
       signInWithEmailPassword,
       signOut,
+      setLocationData: handleSetLocationData,
     }),
-    [user, session, isLoading, signUpWithEmailPassword, signInWithEmailPassword, signOut],
+    [user, session, isLoading, locationData, accessTier, locationRequired, signUpWithEmailPassword, signInWithEmailPassword, signOut, handleSetLocationData],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

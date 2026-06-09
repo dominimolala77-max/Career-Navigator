@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Briefcase, MapPin, Clock, DollarSign, Search } from "lucide-react";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +7,6 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { createApplication } from "@/lib/supabase-helpers";
 import { OPPORTUNITIES, OPPORTUNITY_TYPES, type Opportunity } from "@/data/opportunities";
 import { useToast } from "@/hooks/use-toast";
-import { InAppBrowser } from "@/components/ui/in-app-browser";
 
 const TYPE_COLORS: Record<string, string> = {
   learnership: "cp-badge-primary",
@@ -26,8 +24,6 @@ const STATUS_COLORS: Record<string, string> = {
 export function OpportunitiesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
-
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [fieldFilter, setFieldFilter] = useState("All");
@@ -37,7 +33,6 @@ export function OpportunitiesPage() {
   const [deadline, setDeadline] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
   const [saving, setSaving] = useState(false);
-  const [browserUrl, setBrowserUrl] = useState<{url: string, title: string} | null>(null);
 
   const allFields = ["All", ...Array.from(new Set(OPPORTUNITIES.map(o => o.field)))];
   const allProvinces = ["All", ...Array.from(new Set(OPPORTUNITIES.flatMap(o => o.provinces)))].filter((v, i, a) => a.indexOf(v) === i);
@@ -57,19 +52,18 @@ export function OpportunitiesPage() {
       type: applying.type === "graduate_programme" ? "internship" : applying.type as "learnership" | "internship",
       institution: applying.company,
       programme: applying.title,
-      status: "in_progress",
+      status: "todo",
       deadline: deadline || applying.deadline || undefined,
       amount: applying.stipend,
       province: applying.provinces[0],
       documents: applying.applicationDocuments.map(d => ({ name: d, uploaded: false, required: true })),
-      notes: coverLetter,
+      notes: coverLetter || `Requested managed submission for ${applying.title}.`,
       priority: "medium",
     });
     setSaving(false);
     if (app) {
-      toast({ title: "Application started!", description: `${applying.title} at ${applying.company} added to your tracker.` });
+      toast({ title: "Submission request saved", description: `${applying.title} at ${applying.company} added to your tracker.` });
       setApplying(null);
-      navigate("/applications");
     } else {
       toast({ title: "Failed to save", variant: "destructive" });
     }
@@ -81,7 +75,7 @@ export function OpportunitiesPage() {
       <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
         <div className="cp-section-label mb-2">Work Opportunities</div>
         <h1 className="text-2xl font-extrabold text-[#0F172A]">Learnerships, Internships & Graduate Programmes</h1>
-        <p className="mt-1 text-sm text-slate-500">Find and apply for opportunities matched to your field of study, province, and qualification level.</p>
+        <p className="mt-1 text-sm text-slate-500">Find opportunities matched to your field of study, province, and qualification level, then request managed submissions.</p>
       </div>
 
       {/* Filters */}
@@ -146,7 +140,7 @@ export function OpportunitiesPage() {
             <div className="mt-4 flex gap-2">
               <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelected(opp)}>Details</Button>
               <Button size="sm" className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white" disabled={opp.status === "closed"} onClick={() => setApplying(opp)}>
-                {opp.status === "closed" ? "Closed" : "Apply Now"}
+                {opp.status === "closed" ? "Closed" : "Request"}
               </Button>
             </div>
           </div>
@@ -204,7 +198,7 @@ export function OpportunitiesPage() {
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>
                 <Button onClick={() => { setSelected(null); setApplying(selected); }} disabled={selected.status === "closed"}
-                  className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">Apply Now</Button>
+                  className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">Request</Button>
               </div>
             </div>
           </div>
@@ -244,13 +238,8 @@ export function OpportunitiesPage() {
                 </ul>
               </div>
               <div className="flex gap-3">
-                {applying.applicationUrl && (
-                  <Button variant="outline" className="flex-1 text-[#006B5E]" onClick={() => setBrowserUrl({ url: applying.applicationUrl!, title: applying.title })}>
-                    Official Portal
-                  </Button>
-                )}
                 <Button onClick={handleApply} disabled={saving} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
-                  {saving ? "Saving…" : "Start Application"}
+                  {saving ? "Saving..." : "Save Request"}
                 </Button>
               </div>
             </div>
@@ -258,14 +247,6 @@ export function OpportunitiesPage() {
         </div>
       )}
 
-      {/* In-App Browser */}
-      {browserUrl && (
-        <InAppBrowser
-          url={browserUrl.url}
-          title={browserUrl.title}
-          onClose={() => setBrowserUrl(null)}
-        />
-      )}
     </div>
   );
 }

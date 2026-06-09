@@ -3,7 +3,12 @@ export interface Bursary {
   name: string;
   provider: string;
   fields: string[];
+  // Human-friendly amount text (unchanged) and structured numeric fields for real values
   amount: string;
+  amountCurrency?: string;
+  amountValue?: number; // single known value
+  amountMin?: number; // range minimum
+  amountMax?: number; // range maximum
   deadline: string;
   status: "open" | "closed" | "opening_soon";
   eligibility: string[];
@@ -42,6 +47,8 @@ export const BURSARIES: Bursary[] = [
     provider: "Sasol Limited",
     fields: ["Engineering", "Science", "Computer Science", "Accounting"],
     amount: "Up to R120,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 120000,
     deadline: "31 August 2025",
     status: "open",
     eligibility: [
@@ -82,6 +89,8 @@ export const BURSARIES: Bursary[] = [
     provider: "First National Bank",
     fields: ["Finance", "Accounting", "IT", "Computer Science", "Commerce", "Data Science"],
     amount: "Up to R80,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 80000,
     deadline: "30 September 2025",
     status: "open",
     eligibility: [
@@ -121,6 +130,8 @@ export const BURSARIES: Bursary[] = [
     provider: "Investec",
     fields: ["Finance", "Accounting", "Actuarial Science", "Commerce", "Mathematics"],
     amount: "Up to R100,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 100000,
     deadline: "31 July 2025",
     status: "open",
     eligibility: [
@@ -141,6 +152,8 @@ export const BURSARIES: Bursary[] = [
     provider: "Absa Group",
     fields: ["Finance", "Accounting", "IT", "Data Science", "Risk Management"],
     amount: "Up to R75,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 75000,
     deadline: "30 September 2025",
     status: "open",
     eligibility: [
@@ -177,6 +190,8 @@ export const BURSARIES: Bursary[] = [
     provider: "SAP South Africa",
     fields: ["Computer Science", "IT", "Data Science", "Engineering"],
     amount: "Up to R60,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 60000,
     deadline: "31 October 2025",
     status: "open",
     eligibility: [
@@ -195,6 +210,8 @@ export const BURSARIES: Bursary[] = [
     provider: "Mining Qualifications Authority",
     fields: ["Mining Engineering", "Geology", "Metallurgy", "Environmental Science"],
     amount: "Up to R80,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 80000,
     deadline: "31 August 2025",
     status: "open",
     eligibility: [
@@ -214,6 +231,8 @@ export const BURSARIES: Bursary[] = [
     provider: "Microsoft",
     fields: ["Computer Science", "Software Engineering", "AI & Machine Learning", "Data Science"],
     amount: "USD 5,000 + mentorship",
+    amountCurrency: "USD",
+    amountValue: 5000,
     deadline: "30 June 2025",
     status: "opening_soon",
     eligibility: [
@@ -271,6 +290,8 @@ export const BURSARIES: Bursary[] = [
     provider: "National Union of Mineworkers",
     fields: ["Mining Engineering", "Metallurgy", "Geology"],
     amount: "Up to R50,000 per year",
+    amountCurrency: "ZAR",
+    amountMax: 50000,
     deadline: "31 July 2025",
     status: "open",
     eligibility: [
@@ -289,6 +310,9 @@ export const BURSARIES: Bursary[] = [
     provider: "Sector Education & Training Authorities (SETAs)",
     fields: ["Various — depends on SETA sector"],
     amount: "Varies (R20,000–R80,000)",
+    amountCurrency: "ZAR",
+    amountMin: 20000,
+    amountMax: 80000,
     deadline: "Varies by SETA",
     status: "open",
     eligibility: [

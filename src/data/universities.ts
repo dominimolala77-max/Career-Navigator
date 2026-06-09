@@ -15,6 +15,8 @@ export interface Institution {
   applicationUrl: string;
   passRate: number; // approximate acceptance or success rate for filtering
   minAps: number;
+  applicationFee?: number;
+  applicationFeeSource?: string;
   description: string;
   programmes: Programme[];
 }
@@ -181,3 +183,24 @@ export const UNIVERSITIES: Institution[] = [
   { id: "tvet-sou", name: "South Cape TVET College", type: "tvet_college", province: "Western Cape", website: "http://www.sccollege.co.za", applicationUrl: "http://www.sccollege.co.za", passRate: 90, minAps: 14, description: "Located in George.", programmes: [tvetProgrammes.nated_eng, tvetProgrammes.ncv_it] },
   { id: "tvet-wes", name: "West Coast TVET College", type: "tvet_college", province: "Western Cape", website: "http://www.westcoastcollege.co.za", applicationUrl: "http://www.westcoastcollege.co.za", passRate: 90, minAps: 14, description: "Located in Malmesbury.", programmes: [tvetProgrammes.nated_bus, tvetProgrammes.ncv_office] },
 ];
+
+const VERIFIED_APPLICATION_FEES: Record<string, { amount: number; source: string }> = {
+  uct: { amount: 100, source: "https://assets.apply.org.za/u-files/Prospectuses/UCT2026.pdf" },
+  wits: { amount: 100, source: "https://www.wits.ac.za/undergraduate/apply-to-wits/" },
+  up: { amount: 300, source: "https://www.up.ac.za/online-application/node/37643" },
+  su: { amount: 100, source: "https://www.sun.ac.za/english/pgstudies/Documents/How%20to%20pay%20your%20application%20fee.pdf" },
+  uj: { amount: 200, source: "https://www.uj.ac.za/about/about/internationalisation/international-students-2/applying-to-uj/" },
+  unisa: { amount: 135, source: "https://www.unisa.ac.za/sites/corporate/default/Apply-for-admission" },
+};
+
+export function getInstitutionApplicationFee(institution: Institution) {
+  if (typeof institution.applicationFee === "number") return institution.applicationFee;
+  if (institution.type === "tvet_college") return 0;
+  return VERIFIED_APPLICATION_FEES[institution.id]?.amount ?? null;
+}
+
+export function getInstitutionApplicationFeeSource(institution: Institution) {
+  if (institution.applicationFeeSource) return institution.applicationFeeSource;
+  if (institution.type === "tvet_college") return institution.website;
+  return VERIFIED_APPLICATION_FEES[institution.id]?.source ?? institution.applicationUrl;
+}

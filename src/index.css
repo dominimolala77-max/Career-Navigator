@@ -134,6 +134,12 @@
   .cp-icon-box {
     @apply grid size-10 place-items-center rounded-lg bg-[#E8F5F3] text-[#006B5E];
   }
+  .cp-clickable {
+    @apply cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006B5E] focus-visible:ring-offset-2;
+  }
+  .cp-non-clickable {
+    @apply cursor-default opacity-80 select-none;
+  }
   .cp-section-label {
     @apply text-xs font-semibold uppercase tracking-widest text-[#006B5E];
   }
