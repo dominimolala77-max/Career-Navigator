@@ -5,9 +5,10 @@ import { PRICING_PLANS, formatRand } from "@/data/plans";
 import { isPaymentConfigured, startPayfastCheckout } from "@/lib/payments";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { MapPin } from "lucide-react";
 
 export function PlansPage() {
-  const { user } = useAuth();
+  const { user, accessTier } = useAuth();
   const { toast } = useToast();
 
   async function handlePurchase(plan: (typeof PRICING_PLANS)[number]) {
@@ -69,9 +70,23 @@ export function PlansPage() {
         <div className="cp-section-label mb-2">Plans comparison</div>
         <h1 className="text-2xl font-extrabold text-[#0F172A]">Choose your CareerPath SA plan</h1>
         <p className="mt-1 text-sm text-slate-500">
-          All profiles require a paid plan before submission. NSFAS counts as 1 application on Basic and Standard, and NSFAS has a R0 application fee.
+          {accessTier === "free"
+            ? "You qualify for free rural access. Plans below are for urban users only."
+            : "Urban users must select a paid plan before final submission. NSFAS counts as 1 application on Basic and Standard."}
         </p>
       </div>
+
+      {accessTier === "free" && (
+        <div className="rounded-2xl border border-[#006B5E]/30 bg-[#E8F5F3] p-5 flex gap-3">
+          <MapPin className="size-5 shrink-0 text-[#006B5E] mt-0.5" />
+          <div>
+            <p className="font-bold text-[#006B5E]">Free Rural Access Active</p>
+            <p className="text-sm text-[#006B5E]/80 mt-1">
+              Your GPS location qualifies you for unlimited free supported applications. No plan purchase needed.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {PRICING_PLANS.map((plan) => (

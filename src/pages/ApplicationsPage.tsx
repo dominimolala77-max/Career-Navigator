@@ -114,14 +114,36 @@ export function ApplicationsPage() {
   }
 
   async function handlePayInstitutionFee(appId: string) {
+    const inst = institutionApps.find((a) => a.id === appId);
+    if (!inst || !user) return;
     setPayingFeeId(appId);
-    const ok = await markFeeAsPaid(appId);
-    setPayingFeeId(null);
-    if (ok) {
-      setInstitutionApps(prev => prev.map(a => a.id === appId ? { ...a, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : a));
-      toast({ title: "Institution fee marked paid!" });
-    } else {
-      toast({ title: "Failed to mark fee as paid", variant: "destructive" });
+
+    try {
+      const reference = `fee_${appId}_${Date.now()}`;
+      if (import.meta.env.VITE_PAYMENTS_SERVER_URL) {
+        const payments = await import("@/lib/payments");
+        await payments.startStripeCheckout({
+          kind: "application_fee",
+          itemName: `${inst.institution_name} application fee`,
+          amount: inst.application_fee,
+          userId: user.id,
+          email: user.email,
+          name: user.email ?? "CareerPath User",
+          reference,
+        });
+        return;
+      }
+      const ok = await markFeeAsPaid(appId);
+      if (ok) {
+        setInstitutionApps(prev => prev.map(a => a.id === appId ? { ...a, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : a));
+        toast({ title: "Institution fee marked paid!" });
+      } else {
+        toast({ title: "Failed to mark fee as paid", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Payment failed", description: String(err), variant: "destructive" });
+    } finally {
+      setPayingFeeId(null);
     }
   }
 

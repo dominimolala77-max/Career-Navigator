@@ -12,12 +12,14 @@ interface LocationPermissionModalProps {
   onLocationGranted: (location: LocationData, accessTier: "free" | "paid") => void;
   onSkip?: () => void;
   showSkip?: boolean;
+  isSaving?: boolean;
 }
 
 export function LocationPermissionModal({
   onLocationGranted,
   onSkip,
   showSkip = false,
+  isSaving = false,
 }: LocationPermissionModalProps) {
   const [isRequesting, setIsRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export function LocationPermissionModal({
     }
 
     // Detect province from coordinates
-    const province = coordinatesToProvince(location.latitude, location.longitude);
+    const province = coordinatesToProvince(location.latitude, location.longitude) ?? undefined;
     const locationWithProvince: LocationData = { ...location, province };
     const accessTier = getAccessTier(province);
 
@@ -57,7 +59,7 @@ export function LocationPermissionModal({
           </h2>
           <p className="mt-2 text-sm text-slate-600">
             This app needs your location to determine if you qualify for free rural
-            support or our paid plans.
+            support or paid plans.
           </p>
         </div>
 
@@ -99,13 +101,13 @@ export function LocationPermissionModal({
           <div className="grid gap-3">
             <Button
               onClick={handleRequestLocation}
-              disabled={isRequesting}
+              disabled={isRequesting || isSaving}
               className="h-12 bg-[#006B5E] hover:bg-[#005548] text-white font-semibold gap-2"
             >
-              {isRequesting ? (
+              {isRequesting || isSaving ? (
                 <>
                   <Loader className="size-4 animate-spin" />
-                  Detecting location…
+                  {isSaving ? "Saving location…" : "Detecting location…"}
                 </>
               ) : (
                 <>

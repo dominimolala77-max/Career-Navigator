@@ -4,7 +4,7 @@ import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { createApplication, getProfile, type Profile } from "@/lib/supabase-helpers";
+import { createApplication, createInstitutionApplication, getProfile, type Profile } from "@/lib/supabase-helpers";
 import { UNIVERSITIES, PROVINCES, getInstitutionApplicationFee, type Institution } from "@/data/universities";
 import { useToast } from "@/hooks/use-toast";
 
@@ -76,25 +76,38 @@ export function UniversitiesPage() {
   async function handleApply() {
     if (!user || !applying) return;
     setSaving(true);
-    const app = await createApplication(user.id, {
-      type: applying.type === "tvet_college" ? "tvet" : "university",
-      institution: applying.name,
-      programme,
-      status: "todo",
-      deadline: deadline || undefined,
-      documents: [
-        { name: "South African ID / Passport", uploaded: false, required: true },
-        { name: "Matric Certificate / Results", uploaded: false, required: true },
-        { name: "Proof of Application Fee", uploaded: false, required: false },
-        { name: "Motivational Letter", uploaded: false, required: false },
-      ],
-      notes: `Requested managed submission via CareerPath SA. Official portal: ${applying.applicationUrl}`,
-      priority: "high",
-      province: applying.province,
-      application_fee: getInstitutionApplicationFee(applying),
-      fee_payment_status: getInstitutionApplicationFee(applying) === 0 ? "not_required" : "unpaid",
-      status_updates: [{ message: "Submission request received by CareerPath SA.", at: new Date().toISOString(), by: "system" }],
-    });
+    const fee = getInstitutionApplicationFee(applying) ?? 0;
+    const instType = applying.type === "tvet_college" ? "tvet" as const : "university" as const;
+
+    const [app] = await Promise.all([
+      createApplication(user.id, {
+        type: instType,
+        institution: applying.name,
+        programme,
+        status: "todo",
+        deadline: deadline || undefined,
+        documents: [
+          { name: "South African ID / Passport", uploaded: false, required: true },
+          { name: "Matric Certificate / Results", uploaded: false, required: true },
+          { name: "Proof of Application Fee", uploaded: false, required: false },
+          { name: "Motivational Letter", uploaded: false, required: false },
+        ],
+        notes: `Requested managed submission via CareerPath SA. Official portal: ${applying.applicationUrl}`,
+        priority: "high",
+        province: applying.province,
+        application_fee: fee,
+        fee_payment_status: fee === 0 ? "not_required" : "unpaid",
+        status_updates: [{ message: "Submission request received by CareerPath SA.", at: new Date().toISOString(), by: "system" }],
+      }),
+      createInstitutionApplication(user.id, {
+        institution_type: instType,
+        institution_name: applying.name,
+        programme,
+        application_fee: fee,
+        fee_payment_status: fee === 0 ? "not_required" : "unpaid",
+        notes: `Selected via institution browser. Fee: ${fee === 0 ? "Free" : `R${fee}`}`,
+      }),
+    ]);
     setSaving(false);
     if (app) {
       toast({ title: "Submission request saved", description: `${applying.name} was added for managed submission.` });

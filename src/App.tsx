@@ -1,6 +1,7 @@
 import { Route, Router, Switch } from "wouter";
 
 import { Toaster } from "@/components/ui/toaster";
+import { LocationGate } from "@/components/LocationGate";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { AppLayout } from "@/features/layout/AppLayout";
@@ -28,6 +29,7 @@ function App() {
   return (
     <Router base={getBasePath()}>
       <AuthProvider>
+        <LocationGate>
         <AppLayout>
           <Switch>
             <Route path="/" component={LandingPage} />
@@ -88,6 +90,7 @@ function App() {
             </Route>
           </Switch>
         </AppLayout>
+        </LocationGate>
         <Toaster />
       </AuthProvider>
     </Router>

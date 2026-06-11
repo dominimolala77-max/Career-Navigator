@@ -66,10 +66,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     })();
 
-    const { data: sub } = client.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = client.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       setIsLoading(false);
+      if (event === "SIGNED_IN") {
+        setLocationDataState(null);
+        setAccessTier(null);
+        setLocationRequired(true);
+      }
+      if (event === "SIGNED_OUT") {
+        setLocationDataState(null);
+        setAccessTier(null);
+        setLocationRequired(false);
+      }
     });
 
     return () => {
@@ -90,6 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
       if (error) throw error;
+      if (data.session) {
+        setLocationDataState(null);
+        setAccessTier(null);
+        setLocationRequired(true);
+        localStorage.removeItem("location_data");
+        localStorage.removeItem("access_tier");
+      }
       return data;
     },
     [],
@@ -107,6 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
       if (error) throw error;
+      // Require fresh GPS on every login
+      setLocationDataState(null);
+      setAccessTier(null);
+      setLocationRequired(true);
+      localStorage.removeItem("location_data");
+      localStorage.removeItem("access_tier");
     },
     [],
   );
@@ -117,6 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     setLocationDataState(null);
     setAccessTier(null);
+    setLocationRequired(false);
+    localStorage.removeItem("location_data");
+    localStorage.removeItem("access_tier");
   }, []);
 
   const handleSetLocationData = useCallback(

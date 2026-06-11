@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { LocationPermissionModal } from "@/components/LocationPermissionModal";
-import { updateProfile, type LocationData } from "@/lib/supabase-helpers";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -19,42 +17,28 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function LoginPage() {
-  const { signInWithEmailPassword, user, setLocationData, accessTier } = useAuth();
+  const { signInWithEmailPassword, user, accessTier } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
   const isSubmitting = form.formState.isSubmitting;
 
-  if (user && accessTier) { 
-    navigate("/dashboard"); 
-    return null; 
-  }
+  useEffect(() => {
+    if (user && accessTier) {
+      navigate("/dashboard");
+    }
+  }, [user, accessTier, navigate]);
 
   async function onSubmit(values: Values) {
     try {
       await signInWithEmailPassword(values);
-      toast({ title: "Welcome back!" });
-      // Show location modal after successful login
-      setShowLocationModal(true);
+      toast({
+        title: "Welcome back!",
+        description: "Please turn on device location to continue.",
+      });
     } catch (e) {
       toast({ title: "Login failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
     }
-  }
-
-  async function handleLocationGranted(location: LocationData, tier: "free" | "paid") {
-    setLocationData(location, tier);
-    if (user) {
-      await updateProfile(user.id, {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        province_detected: location.province,
-        access_tier: tier,
-        location_requested_at: new Date().toISOString(),
-      });
-    }
-    setShowLocationModal(false);
-    navigate("/dashboard");
   }
 
   return (
@@ -70,13 +54,14 @@ export function LoginPage() {
 
         <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
           <div className="mb-4 h-1 w-16 rounded-full bg-[#006B5E]" />
-          
-          {/* Security Notice */}
+
           <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-3 flex gap-2">
             <Shield className="size-4 shrink-0 text-blue-600 mt-0.5" />
             <div className="text-xs text-blue-800">
-              <p className="font-semibold">Secure Login</p>
-              <p className="mt-0.5">Your credentials are encrypted and protected under POPIA compliance.</p>
+              <p className="font-semibold">Location required after login</p>
+              <p className="mt-0.5">
+                This app needs your location to determine if you qualify for free rural support or paid plans.
+              </p>
             </div>
           </div>
 
@@ -110,7 +95,6 @@ export function LoginPage() {
             <Link href="/signup"><a className="font-semibold text-[#006B5E] hover:underline">Create one free <ArrowRight className="inline size-3" /></a></Link>
           </p>
 
-          {/* POPIA & Terms Notice */}
           <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
             <p className="text-xs text-slate-600 text-center">
               By logging in, you agree to our terms of service and consent to POPIA-compliant processing of your data.
@@ -118,13 +102,6 @@ export function LoginPage() {
           </div>
         </div>
       </div>
-
-      {showLocationModal && (
-        <LocationPermissionModal
-          onLocationGranted={handleLocationGranted}
-          showSkip={false}
-        />
-      )}
     </div>
   );
 }

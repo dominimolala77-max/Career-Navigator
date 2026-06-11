@@ -20,8 +20,9 @@ export interface Profile {
   id_number?: string;
   phone?: string;
   certified_documents?: Array<{ type: string; name: string; uploaded: boolean; uploaded_at?: string }>;
-  selected_plan?: "priority_unlimited" | "standard" | "basic";
-  plan_payment_status?: "unpaid" | "paid";
+  selected_plan?: "priority_unlimited" | "standard" | "basic" | "free";
+  plan_payment_status?: "unpaid" | "paid" | "free";
+  unpaid_fees_summary?: Array<{ institution: string; amount: number; status: string }>;
   plan_paid_at?: string;
   profile_submission_status?: "draft" | "submitted" | "processing" | "completed";
   profile_submitted_at?: string;

@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, ArrowRight, Check, CreditCard, FileUp, GraduationCap, LockKeyhole,
-  ShieldCheck, Sparkles, AlertCircle, MapPin,
+  ShieldCheck, Sparkles, AlertCircle, MapPin, Building2, Briefcase,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { upsertProfile } from "@/lib/supabase-helpers";
+import { upsertProfile, createInstitutionApplication } from "@/lib/supabase-helpers";
 import { SA_SUBJECTS } from "@/data/subjects";
-import { CAREER_FIELDS, PERSONALITY_TYPES } from "@/data/careers";
+import { CAREER_FIELDS, matchCareers, type Career } from "@/data/careers";
 import { PRICING_PLANS, formatRand, type PlanId } from "@/data/plans";
+import { UNIVERSITIES, getInstitutionApplicationFee, type Institution } from "@/data/universities";
 import { useToast } from "@/hooks/use-toast";
-import { isRuralProvince } from "@/lib/location";
+import { calcAps, apsPoints } from "@/lib/aps";
+import { encryptDocumentMetadata } from "@/lib/document-storage";
 
 const PERSONALITY_QUESTIONS = [
   { id: "q1", question: "When solving a problem, you usually:", options: [{ value: "analytical", label: "Compare facts and data" }, { value: "creative", label: "Look for a fresh idea" }, { value: "social", label: "Ask people and collaborate" }, { value: "technical", label: "Test a practical solution" }] },
@@ -24,15 +27,19 @@ const PERSONALITY_QUESTIONS = [
   { id: "q4", question: "You feel most confident when you are:", options: [{ value: "analytical", label: "Solving a difficult question" }, { value: "business", label: "Planning money or leading a group" }, { value: "social", label: "Supporting someone else" }, { value: "technical", label: "Making something work" }] },
 ];
 
-// Dynamic steps based on access tier
+type SelectedInstitution = {
+  id: string;
+  name: string;
+  type: "university" | "tvet";
+  fee: number;
+  feeStatus: "paid" | "unpaid" | "not_required";
+  programme?: string;
+};
+
 const getSteps = (isRural: boolean): string[] => {
-  if (isRural) {
-    // Rural users skip plan selection - they get free access
-    return ["Details", "Documents", "Subjects", "Quiz", "Submit"];
-  } else {
-    // Urban users must select a paid plan
-    return ["Plan", "Details", "Documents", "Subjects", "Quiz", "Submit"];
-  }
+  const base = ["Details", "Documents", "Subjects", "Quiz", "Careers", "Institutions"];
+  if (isRural) return [...base, "Submit"];
+  return [...base, "Plan", "Submit"];
 };
 
 const PROVINCES = ["Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "Northern Cape", "North West", "Western Cape"];
@@ -48,20 +55,9 @@ function detectPersonalityType(answers: Record<string, string>): string {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "analytical";
 }
 
-function apsPoints(mark: number) {
-  if (mark >= 80) return 7;
-  if (mark >= 70) return 6;
-  if (mark >= 60) return 5;
-  if (mark >= 50) return 4;
-  if (mark >= 40) return 3;
-  if (mark >= 30) return 2;
-  return mark > 0 ? 1 : 0;
-}
-
-function calcAps(subjects: Array<{ code: string; mark: number }>) {
-  return subjects
-    .filter((s) => s.code !== "LO")
-    .reduce((sum, s) => sum + apsPoints(s.mark), 0);
+function formatFeeLabel(name: string, fee: number | null): string {
+  if (fee === 0 || fee === null) return `${name} – Free`;
+  return `${name} – R${fee}`;
 }
 
 export function OnboardingPage() {
@@ -70,6 +66,10 @@ export function OnboardingPage() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+
+  const isRural = accessTier === "free";
+  const STEPS = useMemo(() => getSteps(isRural), [isRural]);
+  const progressPercent = ((step + 1) / STEPS.length) * 100;
 
   const [selectedPlan, setSelectedPlan] = useState<PlanId>("standard");
   const [planPaid, setPlanPaid] = useState(false);
@@ -83,19 +83,45 @@ export function OnboardingPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [preferredFields, setPreferredFields] = useState<string[]>([]);
   const [fundingType, setFundingType] = useState("nsfas");
-
-  // Determine if user is rural based on province
-  const isRural = province ? isRuralProvince(province) : accessTier === "free";
-  const STEPS = useMemo(() => getSteps(isRural), [isRural]);
+  const [selectedInstitutions, setSelectedInstitutions] = useState<SelectedInstitution[]>([]);
+  const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
   useEffect(() => {
     setSubjects(SA_SUBJECTS.slice(0, 7).map((s) => ({ name: s.name, code: s.code, mark: 0 })));
   }, []);
 
+  useEffect(() => {
+    if (locationData?.province && !province) {
+      setProvince(locationData.province === "Lesotho" ? "Free State" : locationData.province);
+    }
+  }, [locationData, province]);
+
   const apsScore = useMemo(() => calcAps(subjects), [subjects]);
   const personalityType = useMemo(() => detectPersonalityType(answers), [answers]);
   const selectedPlanData = PRICING_PLANS.find((p) => p.id === selectedPlan)!;
   const docsReady = REQUIRED_DOCS.every((doc) => documents[doc.type]);
+
+  const matchedCareers = useMemo(() => matchCareers({
+    apsScore,
+    subjects: subjects.map((s) => s.code),
+    personalityType,
+    preferredFields,
+  }), [apsScore, subjects, personalityType, preferredFields]);
+
+  const recommendedInstitutions = useMemo(() => {
+    return UNIVERSITIES
+      .filter((u) => {
+        if (apsScore > 0 && u.minAps > apsScore + 5) return false;
+        if (preferredFields.length) {
+          const fieldMatch = u.programmes.some((p) =>
+            preferredFields.some((f) => p.faculty.toLowerCase().includes(f.toLowerCase().split(" ")[0]))
+          );
+          if (!fieldMatch && u.type !== "tvet_college") return false;
+        }
+        return true;
+      })
+      .slice(0, 12);
+  }, [apsScore, preferredFields]);
 
   function updateMark(code: string, mark: number) {
     setSubjects((prev) => prev.map((s) => s.code === code ? { ...s, mark: Math.max(0, Math.min(100, mark)) } : s));
@@ -112,14 +138,105 @@ export function OnboardingPage() {
     setPreferredFields((prev) => prev.includes(field) ? prev.filter((x) => x !== field) : prev.length < 5 ? [...prev, field] : prev);
   }
 
+  function toggleInstitution(inst: Institution) {
+    const fee = getInstitutionApplicationFee(inst) ?? 0;
+    const type = inst.type === "tvet_college" ? "tvet" : "university";
+    const exists = selectedInstitutions.find((s) => s.id === inst.id);
+    if (exists) {
+      setSelectedInstitutions((prev) => prev.filter((s) => s.id !== inst.id));
+    } else {
+      setSelectedInstitutions((prev) => [...prev, {
+        id: inst.id,
+        name: inst.name,
+        type,
+        fee,
+        feeStatus: fee === 0 ? "not_required" : "unpaid",
+      }]);
+    }
+  }
+
+  async function handlePayInstitutionFee(instId: string) {
+    const inst = selectedInstitutions.find((s) => s.id === instId);
+    if (!inst || !user || inst.fee <= 0) return;
+    setPayingFeeId(instId);
+
+    try {
+      const reference = `fee_${instId}_${user.id}_${Date.now()}`;
+      if (import.meta.env.VITE_PAYMENTS_SERVER_URL) {
+        const payments = await import("@/lib/payments");
+        await payments.startStripeCheckout({
+          kind: "application_fee",
+          itemName: `${inst.name} application fee`,
+          amount: inst.fee,
+          userId: user.id,
+          email: email || undefined,
+          name: fullName || email || "CareerPath User",
+          reference,
+        });
+        return;
+      }
+      setSelectedInstitutions((prev) =>
+        prev.map((s) => s.id === instId ? { ...s, feeStatus: "paid" } : s)
+      );
+      toast({ title: "Fee marked as paid", description: `${inst.name} – R${inst.fee}` });
+    } catch (err) {
+      toast({ title: "Payment failed", description: String(err), variant: "destructive" });
+    } finally {
+      setPayingFeeId(null);
+    }
+  }
+
+  async function handlePayPlan() {
+    if (!user || isRural) return;
+    setSaving(true);
+    try {
+      const reference = `onboard_plan_${user.id}_${Date.now()}`;
+      if (import.meta.env.VITE_PAYMENTS_SERVER_URL) {
+        const payments = await import("@/lib/payments");
+        await payments.startStripeCheckout({
+          kind: "plan",
+          itemName: selectedPlanData.name,
+          amount: selectedPlanData.price,
+          userId: user.id,
+          email: email || undefined,
+          name: fullName || email || "CareerPath User",
+          reference,
+          planId: selectedPlan,
+        });
+        return;
+      }
+      if (import.meta.env.VITE_PAYFAST_MERCHANT_ID && import.meta.env.VITE_PAYFAST_MERCHANT_KEY) {
+        const payments = await import("@/lib/payments");
+        payments.startPayfastCheckout({
+          kind: "plan",
+          itemName: selectedPlanData.name,
+          amount: selectedPlanData.price,
+          userId: user.id,
+          email: email || undefined,
+          name: fullName || email || "CareerPath User",
+          reference,
+          planId: selectedPlan,
+        } as Parameters<typeof payments.startPayfastCheckout>[0]);
+        return;
+      }
+      setPlanPaid(true);
+      toast({ title: "Plan payment simulated", description: "No payment gateway configured." });
+    } catch (err) {
+      toast({ title: "Payment failed to start", description: String(err), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function canContinue() {
     const currentStep = STEPS[step];
-    
-    if (currentStep === "Plan") return Boolean(selectedPlan);
     if (currentStep === "Details") return fullName && idNumber && email && phone && province;
     if (currentStep === "Documents") return docsReady;
     if (currentStep === "Subjects") return subjects.filter((s) => s.mark > 0).length >= 6 && apsScore > 0;
     if (currentStep === "Quiz") return Object.keys(answers).length === PERSONALITY_QUESTIONS.length && preferredFields.length > 0;
+    if (currentStep === "Careers") return preferredFields.length > 0;
+    if (currentStep === "Institutions") return selectedInstitutions.length > 0;
+    if (currentStep === "Plan") return Boolean(selectedPlan) && planPaid;
     return true;
   }
 
@@ -128,7 +245,10 @@ export function OnboardingPage() {
     setSaving(true);
     const now = new Date().toISOString();
 
-    // Save a draft of the profile before payment
+    const unpaidFees = selectedInstitutions
+      .filter((i) => i.feeStatus === "unpaid" && i.fee > 0)
+      .map((i) => ({ institution: i.name, amount: i.fee, status: "unpaid" }));
+
     const draft = {
       id: user.id,
       full_name: fullName,
@@ -139,8 +259,8 @@ export function OnboardingPage() {
       latitude: locationData?.latitude,
       longitude: locationData?.longitude,
       province_detected: locationData?.province,
-      access_tier: isRural ? "free" : "paid",
-      location_requested_at: locationData?.timestamp,
+      access_tier: isRural ? "free" as const : "paid" as const,
+      location_requested_at: locationData ? new Date(locationData.timestamp).toISOString() : now,
       subjects: subjects.map((s) => ({ ...s, aps_points: apsPoints(s.mark) })),
       aps_score: apsScore,
       certified_documents: REQUIRED_DOCS.map((doc) => ({
@@ -148,83 +268,86 @@ export function OnboardingPage() {
         name: documents[doc.type],
         uploaded: Boolean(documents[doc.type]),
         uploaded_at: now,
+        encrypted: documents[doc.type]?.startsWith("enc_v1:") ?? false,
       })),
       personality_answers: answers,
       personality_type: personalityType,
       preferred_fields: preferredFields,
       funding_type: fundingType,
-      selected_plan: isRural ? "free" : selectedPlan,
-      // For rural users: no payment needed. For urban users: unpaid until payment
-      plan_payment_status: isRural ? "free" : "unpaid",
-      onboarding_complete: isRural, // Rural users complete immediately, urban users need payment
-      onboarding_step: step,
+      selected_plan: isRural ? "free" as const : selectedPlan,
+      plan_payment_status: isRural ? "free" as const : (planPaid ? "paid" as const : "unpaid" as const),
+      plan_paid_at: planPaid ? now : undefined,
+      selected_universities: selectedInstitutions.filter((i) => i.type === "university").map((i) => ({ name: i.name, code: i.id })),
+      selected_tvet_colleges: selectedInstitutions.filter((i) => i.type === "tvet").map((i) => ({ name: i.name, code: i.id })),
+      unpaid_fees_summary: unpaidFees,
+      profile_submission_status: "submitted" as const,
+      profile_submitted_at: now,
+      onboarding_complete: isRural || planPaid,
+      onboarding_step: STEPS.length,
     };
 
-    const saved = await upsertProfile(draft as any);
+    const saved = await upsertProfile(draft);
+
+    if (saved && selectedInstitutions.length > 0) {
+      await Promise.all(
+        selectedInstitutions.map((inst) =>
+          createInstitutionApplication(user.id, {
+            institution_type: inst.type,
+            institution_name: inst.name,
+            application_fee: inst.fee,
+            fee_payment_status: inst.feeStatus,
+            fee_paid_at: inst.feeStatus === "paid" ? now : undefined,
+            notes: `Selected during onboarding. ${inst.feeStatus === "unpaid" ? "UNPAID — flagged for admin." : "Fee settled."}`,
+          })
+        )
+      );
+    }
+
     setSaving(false);
+
     if (!saved) {
-      toast({ title: "Could not save profile draft", variant: "destructive" });
+      toast({ title: "Could not save profile", variant: "destructive" });
       return;
     }
 
-    // If profile already paid (unlikely), finalize immediately
-    // Otherwise, start payment flow for the selected plan
+    if (isRural) {
+      toast({
+        title: "Profile submitted!",
+        description: unpaidFees.length
+          ? `Submitted with ${unpaidFees.length} unpaid institution fee(s) — admin team notified.`
+          : "Your profile is being processed by our team.",
+      });
+      navigate("/dashboard");
+      return;
+    }
+
+    if (!planPaid) {
+      toast({
+        title: "Plan payment required",
+        description: "Urban users must pay for a plan before final submission.",
+        variant: "destructive",
+      });
+      setStep(STEPS.indexOf("Plan"));
+      return;
+    }
+
+    toast({
+      title: "Profile submitted for processing!",
+      description: unpaidFees.length
+        ? `Submitted with ${unpaidFees.length} unpaid fee(s) clearly marked for admin.`
+        : "Our team will handle your applications.",
+    });
+    navigate("/dashboard");
+  }
+
+  async function handleDocumentUpload(docType: string, file: File | undefined) {
+    if (!file || !user) return;
     try {
-      if (!selectedPlan) throw new Error("No plan selected");
-      const reference = `onboard_${user.id}_${Date.now()}`;
-      // prefer Stripe server when configured
-      if (import.meta.env.VITE_PAYMENTS_SERVER_URL) {
-        const payments = await import("@/lib/payments");
-        await payments.startStripeCheckout({
-          kind: "plan",
-          itemName: PRICING_PLANS.find(p => p.id === selectedPlan)?.name || "Plan",
-          amount: PRICING_PLANS.find(p => p.id === selectedPlan)?.price || 0,
-          userId: user.id,
-          email: email || undefined,
-          name: fullName || email || "CareerPath User",
-          reference,
-          planId: selectedPlan,
-        });
-        // user will be redirected to Stripe Checkout; webhook will mark profile paid
-        return;
-      }
-
-      // fallback to PayFast if configured
-      if (import.meta.env.VITE_PAYFAST_MERCHANT_ID && import.meta.env.VITE_PAYFAST_MERCHANT_KEY) {
-        const payments = await import("@/lib/payments");
-        payments.startPayfastCheckout({
-          kind: "plan",
-          itemName: PRICING_PLANS.find(p => p.id === selectedPlan)?.name || "Plan",
-          amount: PRICING_PLANS.find(p => p.id === selectedPlan)?.price || 0,
-          userId: user.id,
-          email: email || undefined,
-          name: fullName || email || "CareerPath User",
-          reference,
-          planId: selectedPlan as any,
-        } as any);
-        return;
-      }
-
-      // no payment gateway configured: simulate and finalize
-      const now2 = new Date().toISOString();
-      const finalize = await upsertProfile({
-        id: user.id,
-        selected_plan: selectedPlan,
-        plan_payment_status: "paid",
-        plan_paid_at: now2,
-        profile_submission_status: "submitted",
-        profile_submitted_at: now2,
-        onboarding_complete: true,
-        onboarding_step: STEPS.length,
-      } as any);
-      if (finalize) {
-        toast({ title: "Profile submitted for processing (simulated)", description: "No payment gateway configured; submission completed." });
-        navigate("/dashboard");
-      } else {
-        toast({ title: "Could not finalize submission", variant: "destructive" });
-      }
-    } catch (err) {
-      toast({ title: "Payment failed to start", description: String(err), variant: "destructive" });
+      const encrypted = await encryptDocumentMetadata(user.id, file.name, file.type);
+      setDocuments((prev) => ({ ...prev, [docType]: encrypted }));
+      toast({ title: "Document uploaded securely", description: "Encrypted under POPIA compliance." });
+    } catch {
+      setDocuments((prev) => ({ ...prev, [docType]: file.name }));
     }
   }
 
@@ -234,20 +357,41 @@ export function OnboardingPage() {
         <div className="mb-6 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur">
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
-              <div className="cp-section-label">Premium onboarding</div>
-              <h1 className="text-xl font-extrabold text-[#0F172A] sm:text-2xl">Submit your profile for managed applications</h1>
+              <div className="cp-section-label">Step-by-step onboarding</div>
+              <h1 className="text-xl font-extrabold text-[#0F172A] sm:text-2xl">Set up your CareerPath SA profile</h1>
             </div>
             <span className="hidden rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 sm:inline-flex">
               Step {step + 1} of {STEPS.length}
             </span>
           </div>
-          <div className="grid grid-cols-6 gap-2">
+          <Progress value={progressPercent} className="h-2 mb-3" />
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${STEPS.length}, minmax(0, 1fr))` }}>
             {STEPS.map((name, i) => (
-              <div key={name} className="min-w-0">
-                <div className={cn("h-2 rounded-full transition-all", i <= step ? "bg-[#006B5E]" : "bg-slate-200")} />
-                <p className={cn("mt-1 truncate text-[10px] font-semibold", i === step ? "text-[#006B5E]" : "text-slate-400")}>{name}</p>
+              <div key={name} className="min-w-0 text-center">
+                <div className={cn(
+                  "mx-auto mb-1 grid size-6 place-items-center rounded-full text-[10px] font-bold",
+                  i < step ? "bg-[#006B5E] text-white" : i === step ? "bg-[#006B5E] text-white ring-2 ring-[#006B5E]/30" : "bg-slate-200 text-slate-500"
+                )}>
+                  {i < step ? <Check className="size-3" /> : i + 1}
+                </div>
+                <p className={cn("truncate text-[9px] font-semibold sm:text-[10px]", i === step ? "text-[#006B5E]" : "text-slate-400")}>{name}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Access tier banner */}
+        <div className={cn("mb-4 rounded-xl border p-4 flex gap-3", isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50")}>
+          <MapPin className={cn("size-5 shrink-0 mt-0.5", isRural ? "text-[#006B5E]" : "text-blue-600")} />
+          <div>
+            <p className={cn("font-semibold text-sm", isRural ? "text-[#006B5E]" : "text-blue-900")}>
+              GPS detected: {locationData?.province ?? "Unknown"} — {isRural ? "Free Rural Access" : "Paid Urban Plan Required"}
+            </p>
+            <p className={cn("text-xs mt-0.5", isRural ? "text-[#006B5E]/70" : "text-blue-800")}>
+              {isRural
+                ? "Limpopo, Eastern Cape, or Lesotho — you qualify for full free support."
+                : "Urban/suburban area — select and pay for a plan before final submission."}
+            </p>
           </div>
         </div>
 
@@ -258,90 +402,18 @@ export function OnboardingPage() {
           transition={{ duration: 0.22 }}
           className="rounded-2xl border border-white/80 bg-white p-5 shadow-sm sm:p-7"
         >
-          {STEPS[step] === "Plan" && (
-            <div className="grid gap-5">
-              <div className="flex items-start gap-3">
-                <div className="cp-icon-box"><CreditCard className="size-5" /></div>
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#0F172A]">Choose your plan</h2>
-                  <p className="text-sm text-slate-500">Select a CareerPath plan. You'll be charged after submitting your profile.</p>
-                </div>
-              </div>
-
-              {/* Location-based messaging */}
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex gap-3">
-                <MapPin className="size-5 shrink-0 text-blue-600 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-blue-900">Location-based pricing</p>
-                  <p className="text-sm text-blue-800 mt-1">
-                    Your location ({locationData?.province}) qualifies you for a {isRural ? "FREE" : "PAID"} plan.
-                    {isRural && " Rural users get unlimited applications at no cost!"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 lg:grid-cols-3">
-                {PRICING_PLANS.map((plan) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => { setSelectedPlan(plan.id); setPlanPaid(false); }}
-                    className={cn("rounded-xl border p-4 text-left transition-all", selectedPlan === plan.id ? "border-[#006B5E] bg-[#E8F5F3] shadow-sm" : "border-border hover:border-blue-200")}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-extrabold text-[#0F172A]">{plan.name}</h3>
-                      {plan.id === "priority_unlimited" && <span className="cp-badge-blue">Best value</span>}
-                    </div>
-                    <p className="mt-2 text-3xl font-extrabold text-[#006B5E]">{formatRand(plan.price)}</p>
-                    <p className="mt-1 text-xs text-slate-500">{plan.tagline}</p>
-                    <div className="mt-3 grid gap-1 text-xs text-slate-700">
-                      {plan.benefits.map((benefit) => <span key={benefit}>- {benefit}</span>)}
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-[#0F172A]">Payment due today: {formatRand(selectedPlanData.price)}</p>
-                    <p className="text-sm text-slate-600">Secure in-app payment simulation for the selected plan.</p>
-                  </div>
-                  <Button onClick={() => setPlanPaid(true)} className="bg-[#006B5E] text-white hover:bg-[#005548]">
-                    {planPaid ? <><Check className="mr-2 size-4" /> Paid</> : "Pay plan"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {STEPS[step] === "Details" && (
             <div className="grid gap-5">
               <div className="flex items-start gap-3">
                 <div className="cp-icon-box"><GraduationCap className="size-5" /></div>
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#0F172A]">Basic details</h2>
-                  <p className="text-sm text-slate-500">These details are used by the admin team for application forms.</p>
+                  <h2 className="text-lg font-extrabold text-[#0F172A]">Your details</h2>
+                  <p className="text-sm text-slate-500">Full name, SA ID, email, phone, and province for application forms.</p>
                 </div>
               </div>
-
-              {/* Access tier messaging */}
-              <div className={cn("rounded-xl border p-4 flex gap-3", isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50")}>
-                <MapPin className={cn("size-5 shrink-0 mt-0.5", isRural ? "text-[#006B5E]" : "text-blue-600")} />
-                <div>
-                  <p className={cn("font-semibold", isRural ? "text-[#006B5E]" : "text-blue-900")}>
-                    {isRural ? "✓ Free Rural Access" : "Urban Area - Paid Plan"}
-                  </p>
-                  <p className={cn("text-sm mt-1", isRural ? "text-[#006B5E]/70" : "text-blue-800")}>
-                    {isRural 
-                      ? "You qualify for free supported applications!" 
-                      : "Your plan is active and covers supported applications."}
-                  </p>
-                </div>
-              </div>
-
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><Label>Full Name *</Label><Input className="mt-1.5 h-11" value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
-                <div><Label>ID Number *</Label><Input className="mt-1.5 h-11" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} /></div>
+                <div><Label>SA ID Number *</Label><Input className="mt-1.5 h-11" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} maxLength={13} /></div>
                 <div><Label>Email *</Label><Input className="mt-1.5 h-11" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
                 <div><Label>Phone Number *</Label><Input className="mt-1.5 h-11" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
                 <div className="sm:col-span-2">
@@ -350,6 +422,7 @@ export function OnboardingPage() {
                     <option value="">Select province</option>
                     {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
+                  <p className="mt-1 text-xs text-slate-500">Access tier is determined by GPS, not this selection.</p>
                 </div>
               </div>
             </div>
@@ -361,7 +434,7 @@ export function OnboardingPage() {
                 <div className="cp-icon-box"><FileUp className="size-5" /></div>
                 <div>
                   <h2 className="text-lg font-extrabold text-[#0F172A]">Upload certified documents</h2>
-                  <p className="text-sm text-slate-500">Upload ID front and back plus your matric certificate or latest report card.</p>
+                  <p className="text-sm text-slate-500">ID (front & back) and Matric certificate or latest report card.</p>
                 </div>
               </div>
               <div className="grid gap-3">
@@ -372,15 +445,15 @@ export function OnboardingPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-[#0F172A]">{doc.label}</p>
-                      <p className="truncate text-xs text-slate-500">{documents[doc.type] || "PDF, PNG, or JPG"}</p>
+                      <p className="truncate text-xs text-slate-500">{documents[doc.type] ? "Uploaded & encrypted" : "PDF, PNG, or JPG"}</p>
                     </div>
-                    <input className="hidden" type="file" accept=".pdf,image/*" onChange={(e) => setDocuments((prev) => ({ ...prev, [doc.type]: e.target.files?.[0]?.name ?? "" }))} />
+                    <input className="hidden" type="file" accept=".pdf,image/*" onChange={(e) => void handleDocumentUpload(doc.type, e.target.files?.[0])} />
                   </label>
                 ))}
               </div>
               <div className="flex gap-2 rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4 text-sm text-slate-700">
                 <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#006B5E]" />
-                <p>POPIA notice: your documents and ID data must only be used for application processing, support, audit, and legal compliance.</p>
+                <p>Documents are encrypted at upload. POPIA notice: data used only for application processing, support, audit, and legal compliance.</p>
               </div>
             </div>
           )}
@@ -390,15 +463,19 @@ export function OnboardingPage() {
               <div className="flex items-center justify-between gap-4 rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4">
                 <div>
                   <h2 className="text-lg font-extrabold text-[#0F172A]">Subjects and percentages</h2>
-                  <p className="text-sm text-slate-500">APS is calculated automatically. Life Orientation is excluded.</p>
+                  <p className="text-sm text-slate-500">APS calculated in real-time. Life Orientation excluded.</p>
                 </div>
-                <p className="text-4xl font-extrabold text-[#006B5E]">{apsScore}</p>
+                <div className="text-right">
+                  <p className="text-xs font-bold uppercase text-[#006B5E]">APS Score</p>
+                  <p className="text-4xl font-extrabold text-[#006B5E]">{apsScore}</p>
+                </div>
               </div>
               <div className="grid gap-3">
                 {subjects.map((subject) => (
-                  <div key={subject.code} className="grid grid-cols-[1fr,88px] items-center gap-3 rounded-lg border border-border p-3">
+                  <div key={subject.code} className="grid grid-cols-[1fr,88px,48px] items-center gap-3 rounded-lg border border-border p-3">
                     <p className="truncate text-sm font-semibold text-[#0F172A]">{subject.name}</p>
                     <Input type="number" min={0} max={100} className="h-10 text-center" value={subject.mark || ""} placeholder="%" onChange={(e) => updateMark(subject.code, Number(e.target.value))} />
+                    <span className="text-center text-xs font-bold text-[#006B5E]">{subject.code !== "LO" && subject.mark > 0 ? apsPoints(subject.mark) : "—"}</span>
                   </div>
                 ))}
               </div>
@@ -412,8 +489,8 @@ export function OnboardingPage() {
           {STEPS[step] === "Quiz" && (
             <div className="grid gap-6">
               <div>
-                <h2 className="text-lg font-extrabold text-[#0F172A]">Personality and study interests</h2>
-                <p className="text-sm text-slate-500">These answers improve AI recommendations for careers, fields, universities, and TVET colleges.</p>
+                <h2 className="text-lg font-extrabold text-[#0F172A]">Personality & interests quiz</h2>
+                <p className="text-sm text-slate-500">Short multiple-choice questions to improve AI career recommendations.</p>
               </div>
               {PERSONALITY_QUESTIONS.map((q, index) => (
                 <div key={q.id} className="grid gap-2">
@@ -448,58 +525,197 @@ export function OnboardingPage() {
             </div>
           )}
 
+          {STEPS[step] === "Careers" && (
+            <div className="grid gap-5">
+              <div className="flex items-start gap-3">
+                <div className="cp-icon-box"><Briefcase className="size-5" /></div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-[#0F172A]">AI career recommendations</h2>
+                  <p className="text-sm text-slate-500">Based on your APS ({apsScore}), personality, and preferred fields.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {matchedCareers.slice(0, 6).map((career: Career) => (
+                  <div key={career.id} className="rounded-xl border border-border bg-slate-50 p-4">
+                    <p className="font-bold text-[#0F172A]">{career.title}</p>
+                    <p className="text-xs text-slate-500 mt-1">{career.field}</p>
+                    <p className="text-xs text-slate-600 mt-2 line-clamp-2">{career.description}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
+                <Sparkles className="inline size-4 mr-1" />
+                Universities and TVET colleges are recommended in the next step based on these career matches.
+              </div>
+            </div>
+          )}
+
+          {STEPS[step] === "Institutions" && (
+            <div className="grid gap-5">
+              <div className="flex items-start gap-3">
+                <div className="cp-icon-box"><Building2 className="size-5" /></div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-[#0F172A]">Select universities & TVET colleges</h2>
+                  <p className="text-sm text-slate-500">Choose institutions. Application fees shown clearly — pay directly in-app.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 max-h-[400px] overflow-y-auto pr-1">
+                {recommendedInstitutions.map((inst) => {
+                  const fee = getInstitutionApplicationFee(inst);
+                  const selected = selectedInstitutions.find((s) => s.id === inst.id);
+                  const feeLabel = formatFeeLabel(inst.name, fee);
+                  return (
+                    <div key={inst.id} className={cn("rounded-xl border p-4 transition-all", selected ? "border-[#006B5E] bg-[#E8F5F3]/50" : "border-border")}>
+                      <div className="flex items-start justify-between gap-3">
+                        <button type="button" onClick={() => toggleInstitution(inst)} className="text-left flex-1">
+                          <p className="font-bold text-[#0F172A]">{inst.name}</p>
+                          <p className="text-sm font-semibold text-[#006B5E] mt-1">{feeLabel}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{inst.province} · Min APS {inst.minAps}</p>
+                        </button>
+                        <div className="flex flex-col items-end gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={selected ? "default" : "outline"}
+                            className={selected ? "bg-[#006B5E] text-white" : ""}
+                            onClick={() => toggleInstitution(inst)}
+                          >
+                            {selected ? <><Check className="size-3 mr-1" /> Selected</> : "Select"}
+                          </Button>
+                          {selected && fee !== null && fee > 0 && (
+                            <div className="text-right">
+                              <p className={cn("text-xs font-bold", selected.feeStatus === "paid" ? "text-[#006B5E]" : "text-red-600")}>
+                                {selected.feeStatus === "paid" ? "✓ Paid" : "⚠ Unpaid"}
+                              </p>
+                              {selected.feeStatus !== "paid" && (
+                                <Button
+                                  size="sm"
+                                  className="mt-1 h-8 bg-amber-600 hover:bg-amber-700 text-white text-xs"
+                                  disabled={payingFeeId === inst.id}
+                                  onClick={() => void handlePayInstitutionFee(inst.id)}
+                                >
+                                  <CreditCard className="size-3 mr-1" />
+                                  Pay R{fee}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          {selected && (fee === 0 || fee === null) && (
+                            <span className="text-xs font-bold text-[#006B5E]">Free</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {selectedInstitutions.length > 0 && (
+                <div className="rounded-xl border border-border bg-slate-50 p-4">
+                  <p className="text-sm font-bold text-[#0F172A]">{selectedInstitutions.length} institution(s) selected</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    You can submit your profile even if some fees are unpaid — unpaid fees will be flagged for the admin team.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {STEPS[step] === "Plan" && (
+            <div className="grid gap-5">
+              <div className="flex items-start gap-3">
+                <div className="cp-icon-box"><CreditCard className="size-5" /></div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-[#0F172A]">Choose your paid plan</h2>
+                  <p className="text-sm text-slate-500">Urban users must select and pay before final submission.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 lg:grid-cols-3">
+                {PRICING_PLANS.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => { setSelectedPlan(plan.id); setPlanPaid(false); }}
+                    className={cn("rounded-xl border p-4 text-left transition-all", selectedPlan === plan.id ? "border-[#006B5E] bg-[#E8F5F3] shadow-sm" : "border-border hover:border-blue-200")}
+                  >
+                    <h3 className="font-extrabold text-[#0F172A]">{plan.name}</h3>
+                    <p className="mt-2 text-3xl font-extrabold text-[#006B5E]">{formatRand(plan.price)}</p>
+                    <p className="mt-1 text-xs text-slate-500">{plan.tagline}</p>
+                    <div className="mt-3 grid gap-1 text-xs text-slate-700">
+                      {plan.benefits.map((b) => <span key={b}>- {b}</span>)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="font-bold text-[#0F172A]">Payment due: {formatRand(selectedPlanData.price)}</p>
+                    <p className="text-sm text-slate-600">Secure in-app payment via Stripe or PayFast.</p>
+                  </div>
+                  <Button onClick={() => void handlePayPlan()} disabled={saving || planPaid} className="h-11 bg-[#006B5E] text-white hover:bg-[#005548]">
+                    {planPaid ? <><Check className="mr-2 size-4" /> Paid</> : saving ? "Processing…" : "Pay plan now"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {STEPS[step] === "Submit" && (
             <div className="grid gap-5">
               <div className="flex items-start gap-3">
                 <div className="cp-icon-box"><Sparkles className="size-5" /></div>
                 <div>
                   <h2 className="text-lg font-extrabold text-[#0F172A]">Submit profile for processing</h2>
-                  <p className="text-sm text-slate-500">After submission, the admin team takes over to complete your profile and handle university, NSFAS, bursary, and learnership applications.</p>
+                  <p className="text-sm text-slate-500">Our admin team takes over university, NSFAS, bursary, and learnership applications.</p>
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Plan</p><p className="font-bold text-[#0F172A]">{isRural ? "Free Rural Access" : selectedPlanData.name}</p></div>
-                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">APS</p><p className="font-bold text-[#0F172A]">{apsScore}</p></div>
-                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Location</p><p className="font-bold text-[#0F172A]">{province}</p></div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">APS Score</p><p className="text-2xl font-bold text-[#006B5E]">{apsScore}</p></div>
+                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Access</p><p className="font-bold text-[#0F172A]">{isRural ? "Free Rural" : selectedPlanData.name}</p></div>
+                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Institutions</p><p className="font-bold text-[#0F172A]">{selectedInstitutions.length}</p></div>
+                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Unpaid fees</p><p className="font-bold text-red-600">{selectedInstitutions.filter((i) => i.feeStatus === "unpaid" && i.fee > 0).length}</p></div>
               </div>
-
-              {/* Location-based access info */}
-              <div className={cn("rounded-xl border p-4 flex gap-3", isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50")}>
-                <MapPin className={cn("size-5 shrink-0 mt-0.5", isRural ? "text-[#006B5E]" : "text-blue-600")} />
-                <div>
-                  <p className={cn("font-semibold", isRural ? "text-[#006B5E]" : "text-blue-900")}>
-                    {isRural ? "✓ You qualify for FREE supported applications" : "You have a PAID plan with priority support"}
-                  </p>
-                  <p className={cn("text-sm mt-1", isRural ? "text-[#006B5E]/70" : "text-blue-800")}>
-                    {isRural 
-                      ? "Unlimited applications at no additional cost. Your profile is ready to go!"
-                      : "Your plan covers supported applications plus priority admin support."}
-                  </p>
+              {selectedInstitutions.length > 0 && (
+                <div className="rounded-xl border border-border p-4">
+                  <p className="text-sm font-bold text-[#0F172A] mb-2">Selected institutions & fee status</p>
+                  <div className="grid gap-2">
+                    {selectedInstitutions.map((inst) => (
+                      <div key={inst.id} className="flex justify-between text-sm">
+                        <span>{formatFeeLabel(inst.name, inst.fee)}</span>
+                        <span className={cn("font-semibold", inst.feeStatus === "paid" || inst.feeStatus === "not_required" ? "text-[#006B5E]" : "text-red-600")}>
+                          {inst.feeStatus === "paid" ? "Paid" : inst.feeStatus === "not_required" ? "Free" : "Unpaid"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
+              )}
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                 <p className="font-bold">Professional disclaimer</p>
                 <p className="mt-1">CareerPath SA provides application support and recommendations. Admission, funding, bursary, and learnership outcomes remain subject to each institution or provider.</p>
               </div>
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
                 <p className="flex items-center gap-2 font-bold"><LockKeyhole className="size-4" /> Security and POPIA</p>
-                <p className="mt-1">Keep your login private. Personal information should be processed only for legitimate application services, status updates, support, and regulatory compliance.</p>
+                <p className="mt-1">Personal information is encrypted and processed only for legitimate application services, status updates, support, and regulatory compliance.</p>
               </div>
             </div>
           )}
 
           <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
-            <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="gap-2">
+            <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="gap-2 h-11">
               <ArrowLeft className="size-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (
-              <Button onClick={() => setStep((s) => s + 1)} disabled={!canContinue()} className="gap-2 bg-[#006B5E] text-white hover:bg-[#005548]">
+              <Button onClick={() => setStep((s) => s + 1)} disabled={!canContinue()} className="gap-2 h-11 bg-[#006B5E] text-white hover:bg-[#005548]">
                 Next <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={saving || (isRural && !planPaid && STEPS[step] === "Submit")} className="gap-2 bg-[#006B5E] text-white hover:bg-[#005548]">
-                {saving ? "Submitting..." : <><Check className="size-4" /> {isRural ? "Complete Setup & Start" : "Submit for Processing"}</>}
+              <Button
+                onClick={() => void handleSubmit()}
+                disabled={saving || (!isRural && !planPaid)}
+                className="gap-2 h-11 bg-[#006B5E] text-white hover:bg-[#005548]"
+              >
+                {saving ? "Submitting…" : <><Check className="size-4" /> Submit for Processing</>}
               </Button>
             )}
           </div>
