@@ -60,35 +60,79 @@ function formatFeeLabel(name: string, fee: number | null): string {
   return `${name} – R${fee}`;
 }
 
+const ONBOARDING_STORAGE_KEY = "careerpath_onboarding";
+
+function loadOnboardingDraft(): Record<string, unknown> | null {
+  try {
+    const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveOnboardingDraft(draft: Record<string, unknown>): void {
+  try {
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage full or unavailable – silently ignore
+  }
+}
+
+function clearOnboardingDraft(): void {
+  localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+}
+
+const onboardingDraft = loadOnboardingDraft();
+
 export function OnboardingPage() {
   const { user, accessTier, locationData } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState<number>(() => (onboardingDraft?.step as number) ?? 0);
   const [saving, setSaving] = useState(false);
 
   const isRural = accessTier === "free";
   const STEPS = useMemo(() => getSteps(isRural), [isRural]);
   const progressPercent = ((step + 1) / STEPS.length) * 100;
 
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>("standard");
-  const [planPaid, setPlanPaid] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [idNumber, setIdNumber] = useState("");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [phone, setPhone] = useState("");
-  const [province, setProvince] = useState(locationData?.province ?? "");
-  const [documents, setDocuments] = useState<Record<string, string>>({});
-  const [subjects, setSubjects] = useState<Array<{ name: string; code: string; mark: number }>>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [preferredFields, setPreferredFields] = useState<string[]>([]);
-  const [fundingType, setFundingType] = useState("nsfas");
-  const [selectedInstitutions, setSelectedInstitutions] = useState<SelectedInstitution[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>(() => (onboardingDraft?.selectedPlan as PlanId) ?? "standard");
+  const [planPaid, setPlanPaid] = useState(() => Boolean(onboardingDraft?.planPaid));
+  const [fullName, setFullName] = useState(() => (onboardingDraft?.fullName as string) ?? "");
+  const [idNumber, setIdNumber] = useState(() => (onboardingDraft?.idNumber as string) ?? "");
+  const [email, setEmail] = useState(() => (onboardingDraft?.email as string) ?? (user?.email ?? ""));
+  const [phone, setPhone] = useState(() => (onboardingDraft?.phone as string) ?? "");
+  const [province, setProvince] = useState(() => (onboardingDraft?.province as string) ?? (locationData?.province ?? ""));
+  const [documents, setDocuments] = useState<Record<string, string>>(() => (onboardingDraft?.documents as Record<string, string>) ?? {});
+  const [subjects, setSubjects] = useState<Array<{ name: string; code: string; mark: number }>>(() => {
+    const saved = onboardingDraft?.subjects as Array<{ name: string; code: string; mark: number }> | undefined;
+    return saved && saved.length > 0 ? saved : SA_SUBJECTS.slice(0, 7).map((s) => ({ name: s.name, code: s.code, mark: 0 }));
+  });
+  const [answers, setAnswers] = useState<Record<string, string>>(() => (onboardingDraft?.answers as Record<string, string>) ?? {});
+  const [preferredFields, setPreferredFields] = useState<string[]>(() => (onboardingDraft?.preferredFields as string[]) ?? []);
+  const [fundingType, setFundingType] = useState(() => (onboardingDraft?.fundingType as string) ?? "nsfas");
+  const [selectedInstitutions, setSelectedInstitutions] = useState<SelectedInstitution[]>(() => (onboardingDraft?.selectedInstitutions as SelectedInstitution[]) ?? []);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
+  // Auto-save onboarding draft whenever form state changes
   useEffect(() => {
-    setSubjects(SA_SUBJECTS.slice(0, 7).map((s) => ({ name: s.name, code: s.code, mark: 0 })));
-  }, []);
+    saveOnboardingDraft({
+      step,
+      fullName,
+      idNumber,
+      email,
+      phone,
+      province,
+      documents,
+      subjects,
+      answers,
+      preferredFields,
+      fundingType,
+      selectedInstitutions,
+      selectedPlan,
+      planPaid,
+    });
+  }, [step, fullName, idNumber, email, phone, province, documents, subjects, answers, preferredFields, fundingType, selectedInstitutions, selectedPlan, planPaid]);
 
   useEffect(() => {
     if (locationData?.province && !province) {
@@ -309,6 +353,9 @@ export function OnboardingPage() {
       toast({ title: "Could not save profile", variant: "destructive" });
       return;
     }
+
+    // Clear the persisted draft on successful submission
+    clearOnboardingDraft();
 
     if (isRural) {
       toast({

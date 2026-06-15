@@ -63,6 +63,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSession(data.session);
       setUser(data.session?.user ?? null);
+
+      // Restore persisted location data so location is not re-requested on refresh
+      const savedLocation = localStorage.getItem("location_data");
+      const savedTier = localStorage.getItem("access_tier");
+      if (savedLocation && savedTier) {
+        try {
+          const parsed = JSON.parse(savedLocation) as LocationData;
+          setLocationDataState(parsed);
+          setAccessTier(savedTier as "free" | "paid");
+          setLocationRequired(false);
+        } catch {
+          // Corrupted data – ignore and require fresh location
+          localStorage.removeItem("location_data");
+          localStorage.removeItem("access_tier");
+        }
+      } else {
+        setLocationRequired(Boolean(data.session?.user));
+      }
+
       setIsLoading(false);
     })();
 
