@@ -101,7 +101,7 @@ export function SignupPage() {
           </Form>
           <p className="mt-5 text-center text-sm text-slate-500">
             Already have an account?{" "}
-            <Link href="/login"><a className="font-semibold text-[#006B5E] hover:underline">Log in</a></Link>
+            <Link href="/login" className="font-semibold text-[#006B5E] hover:underline">Log in</Link>
           </p>
           <p className="mt-4 text-center text-xs text-slate-400">
             By signing up you agree to our terms. Your data is protected under POPIA.

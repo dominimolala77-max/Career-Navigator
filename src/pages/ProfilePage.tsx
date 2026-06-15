@@ -325,7 +325,7 @@ export function ProfilePage() {
               <div className="rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4">
                 <p className="font-semibold text-[#006B5E]">Personality Type: {personalityLabel.icon} {personalityLabel.label}</p>
                 <p className="text-sm text-slate-600 mt-0.5">{personalityLabel.description}</p>
-                <p className="text-xs text-slate-400 mt-2">Retake personality quiz by <Link href="/onboarding"><a className="underline">redoing onboarding</a></Link></p>
+                <p className="text-xs text-slate-400 mt-2">Retake personality quiz by <Link href="/onboarding" className="underline">redoing onboarding</Link></p>
               </div>
             )}
           </div>

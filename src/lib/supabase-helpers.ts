@@ -94,10 +94,10 @@ export async function upsertProfile(profile: Partial<Profile> & { id: string }):
 
 export async function updateProfile(userId: string, updates: Partial<Profile>): Promise<boolean> {
   if (!supabase) return false;
+  // Use upsert so it works even if the profile row doesn't exist yet
   const { error } = await supabase
     .from("profiles")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", userId);
+    .upsert({ id: userId, ...updates, updated_at: new Date().toISOString() }, { onConflict: "id" });
   if (error) { console.error("updateProfile error:", error); return false; }
   return true;
 }

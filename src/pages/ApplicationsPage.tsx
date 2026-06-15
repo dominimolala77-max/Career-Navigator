@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BookOpen, CalendarDays, CheckCircle2, Circle, CreditCard, MessageSquareText, Plus, Trash2, AlertCircle, Shield } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -236,7 +237,7 @@ export function ApplicationsPage() {
             <p className="text-slate-600 font-semibold">No institutions selected yet</p>
             <p className="text-sm text-slate-500 mt-1">Browse and select universities or TVET colleges to manage their application fees</p>
             <Button asChild className="mt-4 bg-[#006B5E] hover:bg-[#005548] text-white">
-              <a href="/universities">Browse Institutions</a>
+              <Link href="/universities">Browse Institutions</Link>
             </Button>
           </div>
         ) : (

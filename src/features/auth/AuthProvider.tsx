@@ -88,16 +88,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = client.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      setIsLoading(false);
+      if (event !== "INITIAL_SESSION") {
+        setIsLoading(false);
+      }
+      // Only reset location on explicit sign-in (not on page load / session restore)
       if (event === "SIGNED_IN") {
-        setLocationDataState(null);
-        setAccessTier(null);
-        setLocationRequired(true);
+        // Check if this is a real sign-in vs session restore on page load
+        // We use a heuristic: if location was already persisted, don't reset it
+        const savedTier = localStorage.getItem("access_tier");
+        if (!savedTier) {
+          setLocationDataState(null);
+          setAccessTier(null);
+          setLocationRequired(true);
+        }
       }
       if (event === "SIGNED_OUT") {
         setLocationDataState(null);
         setAccessTier(null);
         setLocationRequired(false);
+        localStorage.removeItem("location_data");
+        localStorage.removeItem("access_tier");
       }
     });
 

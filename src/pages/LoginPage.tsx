@@ -92,7 +92,7 @@ export function LoginPage() {
           </Form>
           <p className="mt-5 text-center text-sm text-slate-500">
             Don't have an account?{" "}
-            <Link href="/signup"><a className="font-semibold text-[#006B5E] hover:underline">Create one free <ArrowRight className="inline size-3" /></a></Link>
+            <Link href="/signup" className="font-semibold text-[#006B5E] hover:underline">Create one free <ArrowRight className="inline size-3" /></Link>
           </p>
 
           <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
