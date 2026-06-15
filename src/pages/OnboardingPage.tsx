@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, ArrowRight, Check, CreditCard, FileUp, GraduationCap, LockKeyhole,
-  ShieldCheck, Sparkles, AlertCircle, MapPin, Building2, Briefcase,
+  ShieldCheck, Sparkles, AlertCircle, MapPin, Building2, Briefcase, X, Save,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -178,6 +178,15 @@ export function OnboardingPage() {
     }
   }
 
+  function removeSubject(subjectCode: string) {
+    // Keep at least 6 subjects to maintain APS validity
+    if (subjects.length <= 6) {
+      toast({ title: "Minimum 6 subjects required", variant: "destructive" });
+      return;
+    }
+    setSubjects((prev) => prev.filter((s) => s.code !== subjectCode));
+  }
+
   function toggleField(field: string) {
     setPreferredFields((prev) => prev.includes(field) ? prev.filter((x) => x !== field) : prev.length < 5 ? [...prev, field] : prev);
   }
@@ -284,6 +293,61 @@ export function OnboardingPage() {
     return true;
   }
 
+  async function handleSaveDraft() {
+    if (!user) return;
+    setSaving(true);
+    const now = new Date().toISOString();
+
+    const draft = {
+      id: user.id,
+      full_name: fullName,
+      id_number: idNumber,
+      email,
+      phone,
+      province,
+      latitude: locationData?.latitude,
+      longitude: locationData?.longitude,
+      province_detected: locationData?.province,
+      access_tier: isRural ? "free" as const : "paid" as const,
+      location_requested_at: locationData ? new Date(locationData.timestamp).toISOString() : now,
+      subjects: subjects.map((s) => ({ ...s, aps_points: apsPoints(s.mark) })),
+      aps_score: apsScore,
+      certified_documents: REQUIRED_DOCS.map((doc) => ({
+        type: doc.type,
+        name: documents[doc.type],
+        uploaded: Boolean(documents[doc.type]),
+        uploaded_at: now,
+        encrypted: documents[doc.type]?.startsWith("enc_v1:") ?? false,
+      })),
+      personality_answers: answers,
+      personality_type: personalityType,
+      preferred_fields: preferredFields,
+      funding_type: fundingType,
+      selected_plan: isRural ? "free" as const : selectedPlan,
+      plan_payment_status: isRural ? "free" as const : (planPaid ? "paid" as const : "unpaid" as const),
+      plan_paid_at: planPaid ? now : undefined,
+      selected_universities: [...new Set(selectedInstitutions.filter((i) => i.type === "university").map((i) => ({ name: i.name, code: i.id })))],
+      selected_tvet_colleges: [...new Set(selectedInstitutions.filter((i) => i.type === "tvet").map((i) => ({ name: i.name, code: i.id })))],
+      profile_submission_status: "draft" as const,
+      onboarding_complete: false,
+      onboarding_step: step,
+    };
+
+    const saved = await upsertProfile(draft);
+
+    setSaving(false);
+
+    if (!saved) {
+      toast({ title: "Could not save profile draft", variant: "destructive" });
+      return;
+    }
+
+    toast({
+      title: "Profile saved as draft!",
+      description: "You can continue filling it out later.",
+    });
+  }
+
   async function handleSubmit() {
     if (!user) return;
     setSaving(true);
@@ -321,8 +385,8 @@ export function OnboardingPage() {
       selected_plan: isRural ? "free" as const : selectedPlan,
       plan_payment_status: isRural ? "free" as const : (planPaid ? "paid" as const : "unpaid" as const),
       plan_paid_at: planPaid ? now : undefined,
-      selected_universities: selectedInstitutions.filter((i) => i.type === "university").map((i) => ({ name: i.name, code: i.id })),
-      selected_tvet_colleges: selectedInstitutions.filter((i) => i.type === "tvet").map((i) => ({ name: i.name, code: i.id })),
+      selected_universities: [...new Set(selectedInstitutions.filter((i) => i.type === "university").map((i) => ({ name: i.name, code: i.id })))],
+      selected_tvet_colleges: [...new Set(selectedInstitutions.filter((i) => i.type === "tvet").map((i) => ({ name: i.name, code: i.id })))],
       unpaid_fees_summary: unpaidFees,
       profile_submission_status: "submitted" as const,
       profile_submitted_at: now,
@@ -427,20 +491,22 @@ export function OnboardingPage() {
           </div>
         </div>
 
-        {/* Access tier banner */}
-        <div className={cn("mb-4 rounded-xl border p-4 flex gap-3", isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50")}>
-          <MapPin className={cn("size-5 shrink-0 mt-0.5", isRural ? "text-[#006B5E]" : "text-blue-600")} />
-          <div>
-            <p className={cn("font-semibold text-sm", isRural ? "text-[#006B5E]" : "text-blue-900")}>
-              GPS detected: {locationData?.province ?? "Unknown"} — {isRural ? "Free Rural Access" : "Paid Urban Plan Required"}
-            </p>
-            <p className={cn("text-xs mt-0.5", isRural ? "text-[#006B5E]/70" : "text-blue-800")}>
-              {isRural
-                ? "Limpopo, Eastern Cape, or Lesotho — you qualify for full free support."
-                : "Urban/suburban area — select and pay for a plan before final submission."}
-            </p>
+        {/* Access tier banner - only shown on first step (entry) */}
+        {step === 0 && (
+          <div className={cn("mb-4 rounded-xl border p-4 flex gap-3", isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50")}>
+            <MapPin className={cn("size-5 shrink-0 mt-0.5", isRural ? "text-[#006B5E]" : "text-blue-600")} />
+            <div>
+              <p className={cn("font-semibold text-sm", isRural ? "text-[#006B5E]" : "text-blue-900")}>
+                GPS detected: {locationData?.province ?? "Unknown"} — {isRural ? "Free Rural Access" : "Paid Urban Plan Required"}
+              </p>
+              <p className={cn("text-xs mt-0.5", isRural ? "text-[#006B5E]/70" : "text-blue-800")}>
+                {isRural
+                  ? "Limpopo, Eastern Cape, or Lesotho — you qualify for full free support."
+                  : "Urban/suburban area — select and pay for a plan before final submission."}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         <motion.div
           key={step}
@@ -519,10 +585,18 @@ export function OnboardingPage() {
               </div>
               <div className="grid gap-3">
                 {subjects.map((subject) => (
-                  <div key={subject.code} className="grid grid-cols-[1fr,88px,48px] items-center gap-3 rounded-lg border border-border p-3">
+                  <div key={subject.code} className="grid grid-cols-[1fr,88px,48px,36px] items-center gap-3 rounded-lg border border-border p-3">
                     <p className="truncate text-sm font-semibold text-[#0F172A]">{subject.name}</p>
                     <Input type="number" min={0} max={100} className="h-10 text-center" value={subject.mark || ""} placeholder="%" onChange={(e) => updateMark(subject.code, Number(e.target.value))} />
                     <span className="text-center text-xs font-bold text-[#006B5E]">{subject.code !== "LO" && subject.mark > 0 ? apsPoints(subject.mark) : "—"}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSubject(subject.code)}
+                      className="flex size-9 items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                      title="Remove subject"
+                    >
+                      <X className="size-4" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -749,9 +823,19 @@ export function OnboardingPage() {
           )}
 
           <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
-            <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="gap-2 h-11">
-              <ArrowLeft className="size-4" /> Back
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="gap-2 h-11">
+                <ArrowLeft className="size-4" /> Back
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void handleSaveDraft()}
+                disabled={saving || !fullName}
+                className="gap-2 h-11 border-green-200 text-green-700 hover:bg-green-50"
+              >
+                <Save className="size-4" /> {saving ? "Saving…" : "Save Draft"}
+              </Button>
+            </div>
             {step < STEPS.length - 1 ? (
               <Button onClick={() => setStep((s) => s + 1)} disabled={!canContinue()} className="gap-2 h-11 bg-[#006B5E] text-white hover:bg-[#005548]">
                 Next <ArrowRight className="size-4" />
