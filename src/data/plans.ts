@@ -16,7 +16,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "priority_unlimited",
     name: "Priority Unlimited Plan",
-    price: 1000,
+    price: 599,
     tagline: "Best for learners who want the team to move as fast as possible.",
     applicationLimit: "unlimited",
     processing: "ASAP priority processing",
@@ -32,7 +32,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "standard",
     name: "Standard Plan",
-    price: 449,
+    price: 299,
     tagline: "A strong package for learners applying to several institutions.",
     applicationLimit: 10,
     processing: "Standard managed processing",
@@ -48,7 +48,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "basic",
     name: "Basic Plan",
-    price: 249,
+    price: 199,
     tagline: "Simple managed support for a focused application list.",
     applicationLimit: 5,
     processing: "Standard managed processing",

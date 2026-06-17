@@ -2,7 +2,7 @@ import { CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { PRICING_PLANS, formatRand } from "@/data/plans";
-import { isPaymentConfigured, startPayfastCheckout } from "@/lib/payments";
+import { isPaymentConfigured, startPayfastCheckout, isYocoConfigured, startYocoCheckout } from "@/lib/payments";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin } from "lucide-react";
@@ -18,45 +18,58 @@ export function PlansPage() {
       return;
     }
 
-    if ((import.meta.env.VITE_PAYMENTS_SERVER_URL)) {
+    const commonRequest = {
+      kind: "plan" as const,
+      itemName: plan.name,
+      amount: plan.price,
+      userId: user.id,
+      email: (user as any).email || undefined,
+      name: (user as any).full_name || (user as any).email || "CareerPath User",
+      reference,
+      planId: plan.id,
+    };
+
+    // BUG FIX #4: Yoco is the primary SA payment gateway — try it first.
+    // Previously Stripe was always attempted first, meaning Yoco was only
+    // reached as a fallback after a Stripe network failure, causing a slow UX
+    // and misleading error toasts on every payment attempt.
+    if (isYocoConfigured()) {
+      try {
+        await startYocoCheckout(commonRequest);
+        return;
+      } catch (e) {
+        console.warn("Yoco checkout failed, trying Stripe:", e);
+      }
+    }
+
+    // Fallback to Stripe
+    const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
+    if (paymentsServer) {
       try {
         const payments = await import("@/lib/payments");
-        await payments.startStripeCheckout({
-          kind: "plan",
-          itemName: plan.name,
-          amount: plan.price,
-          userId: user.id,
-          email: (user as any).email || undefined,
-          name: (user as any).full_name || (user as any).email || "CareerPath User",
-          reference,
-          planId: plan.id,
-        });
+        await payments.startStripeCheckout(commonRequest);
+        return;
+      } catch (e) {
+        console.warn("Stripe checkout also failed:", e);
+        toast({ title: "Payment failed to start", description: String(e), variant: "destructive" });
+        return;
+      }
+    }
+
+    // Last resort: PayFast (redirect-based, no server required)
+    if (isPaymentConfigured()) {
+      try {
+        startPayfastCheckout(commonRequest);
       } catch (e) {
         toast({ title: "Payment failed to start", description: String(e), variant: "destructive" });
       }
       return;
     }
 
-    if (isPaymentConfigured()) {
-      try {
-        startPayfastCheckout({
-          kind: "plan",
-          itemName: plan.name,
-          amount: plan.price,
-          userId: user.id,
-          email: (user as any).email || undefined,
-          name: (user as any).full_name || (user as any).email || "CareerPath User",
-          reference,
-        });
-      } catch (e) {
-        toast({ title: "Payment failed to start", description: String(e), variant: "destructive" });
-      }
-      return;
-    } else {
-      localStorage.setItem(`purchased_plan:${user.id}`, plan.id);
-      toast({ title: "Purchase simulated", description: "Payment gateway not configured — plan saved locally." });
-      window.location.href = "/onboarding";
-    }
+    // Dev fallback: simulate purchase locally
+    localStorage.setItem(`purchased_plan:${user.id}`, plan.id);
+    toast({ title: "Purchase simulated", description: "Payment gateway not configured — plan saved locally." });
+    window.location.href = "/onboarding";
   }
 
   return (

@@ -103,3 +103,43 @@ export async function startStripeCheckout(request: PaymentRequest) {
     throw new Error("No checkout url returned from payments server");
   }
 }
+
+// ─── Yoco Checkout Integration ──────────────────────────────────────────
+// Yoco is a South African payment gateway supporting card payments via hosted checkout.
+// Docs: https://developer.yoco.com/docs/checkout-api
+
+export function isYocoConfigured() {
+  return Boolean(
+    import.meta.env.VITE_PAYMENTS_SERVER_URL &&
+    import.meta.env.VITE_YOCO_PUBLIC_KEY
+  );
+}
+
+export async function startYocoCheckout(request: PaymentRequest) {
+  const server = import.meta.env.VITE_PAYMENTS_SERVER_URL || "";
+  if (!server) throw new Error("Payments server URL not configured (VITE_PAYMENTS_SERVER_URL)");
+
+  const resp = await fetch(`${server.replace(/\/$/, "")}/yoco/create-checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: request.kind,
+      itemName: request.itemName,
+      amount: request.amount,
+      userId: request.userId,
+      email: request.email,
+      reference: request.reference,
+      planId: request.planId,
+      applicationId: request.applicationId,
+      currency: "ZAR",
+    }),
+  });
+
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || "Failed to create Yoco checkout session");
+  if (data.url) {
+    window.location.href = data.url;
+  } else {
+    throw new Error("No checkout url returned from Yoco server");
+  }
+}

@@ -41,6 +41,18 @@ function App() {
                 <OnboardingPage />
               </RequireAuth>
             </Route>
+            {/*
+              BUG FIX #3: PayFast and Yoco redirect back to /payment/return (set in
+              payments.ts return_url / server SUCCESS_URL), but the route was registered
+              as /payment/success — causing a 404 after every successful payment.
+              Added /payment/return route; kept /payment/success as an alias so that
+              any Stripe-configured SUCCESS_URL pointing to /payment/success still works.
+            */}
+            <Route path="/payment/return">
+              <RequireAuth>
+                <PaymentReturnPage />
+              </RequireAuth>
+            </Route>
             <Route path="/payment/success">
               <RequireAuth>
                 <PaymentReturnPage />

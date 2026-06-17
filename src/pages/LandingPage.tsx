@@ -46,60 +46,60 @@ export function LandingPage() {
   const { user } = useAuth();
 
   return (
-    <div>
+    <div className="overflow-x-hidden">
       {/* Hero */}
       <section className="relative overflow-hidden bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-24">
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 lg:items-center">
             <div>
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#006B5E]/20 bg-[#E8F5F3] px-4 py-1.5 text-sm font-semibold text-[#006B5E]">
-                <Star className="size-4" />
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#006B5E]/20 bg-[#E8F5F3] px-3 py-1 text-xs sm:text-sm font-semibold text-[#006B5E]">
+                <Star className="size-3 sm:size-4" />
                 For anyone studying in South Africa
               </div>
-              <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-[#0F172A] sm:text-5xl lg:text-6xl">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold leading-tight tracking-tight text-[#0F172A]">
                 Your University &<br />
                 <span className="text-[#006B5E]">Funding Assistant</span>
               </h1>
-              <p className="mt-5 text-lg leading-relaxed text-slate-600">
+              <p className="mt-4 text-base sm:text-lg leading-relaxed text-slate-600">
                 CareerPath SA helps you apply to universities and TVET colleges, check NSFAS eligibility, find relevant bursaries, and track everything — while our team handles the submissions for you.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 {user ? (
-                  <Button asChild size="lg" className="bg-[#006B5E] hover:bg-[#005548] text-white h-12 px-7">
+                  <Button asChild size="lg" className="bg-[#006B5E] hover:bg-[#005548] text-white h-11 sm:h-12 px-6 sm:px-7 text-sm sm:text-base">
                     <Link href="/dashboard">Go to Dashboard <ArrowRight className="ml-2 size-4" /></Link>
                   </Button>
                 ) : (
                   <>
-                    <Button asChild size="lg" className="bg-[#006B5E] hover:bg-[#005548] text-white h-12 px-7">
+                    <Button asChild size="lg" className="bg-[#006B5E] hover:bg-[#005548] text-white h-11 sm:h-12 px-6 sm:px-7 text-sm sm:text-base">
                       <Link href="/signup">Choose a Plan <ArrowRight className="ml-2 size-4" /></Link>
                     </Button>
-                    <Button asChild size="lg" variant="outline" className="h-12 px-7 border-slate-300">
+                    <Button asChild size="lg" variant="outline" className="h-11 sm:h-12 px-6 sm:px-7 text-sm sm:text-base border-slate-300">
                       <Link href="/login">Log In</Link>
                     </Button>
                   </>
                 )}
               </div>
-              <p className="mt-4 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-slate-400">
                 Paid managed service from R249. Free rural access available in qualifying provinces. Secure under POPIA.
               </p>
             </div>
 
             {/* Stats Card */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {STATS.map((stat) => (
-                <div key={stat.label} className="rounded-2xl border border-border bg-white p-6 shadow-sm text-center">
-                  <p className="text-4xl font-extrabold text-[#006B5E]">{stat.value}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-500">{stat.label}</p>
+                <div key={stat.label} className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm text-center">
+                  <p className="text-3xl sm:text-4xl font-extrabold text-[#006B5E]">{stat.value}</p>
+                  <p className="mt-1 text-xs sm:text-sm font-medium text-slate-500">{stat.label}</p>
                 </div>
               ))}
-              <div className="col-span-2 rounded-2xl border border-[#006B5E]/20 bg-[#E8F5F3] p-5">
-                <div className="flex items-start gap-4">
-                  <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#006B5E] text-white">
-                    <Users className="size-6" />
+              <div className="col-span-2 rounded-2xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4 sm:p-5">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="grid size-10 sm:size-12 shrink-0 place-items-center rounded-xl bg-[#006B5E] text-white">
+                    <Users className="size-5 sm:size-6" />
                   </div>
-                  <div>
-                    <p className="font-bold text-[#0F172A]">Get assisted with University Applications, NSFAS & Bursaries</p>
-                    <p className="mt-1 text-sm text-slate-600">
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm sm:text-base text-[#0F172A]">Get assisted with University Applications, NSFAS & Bursaries</p>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600">
                       We specialise in university and TVET admissions, NSFAS funding, and bursaries linked to your chosen institutions.
                     </p>
                   </div>
@@ -111,20 +111,20 @@ export function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section className="border-t border-border bg-slate-50 py-16 sm:py-20">
+      <section className="border-t border-border bg-slate-50 py-12 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center">
             <p className="cp-section-label">How it works</p>
-              <h2 className="mt-3 text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
+              <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0F172A]">
                 From application to admission in 4 steps
               </h2>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 sm:mt-12 grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {MANAGED_STEPS.map((step) => (
-              <div key={step.number} className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-                <p className="text-4xl font-extrabold text-[#006B5E]/20">{step.number}</p>
-                <h3 className="mt-3 font-bold text-[#0F172A]">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">{step.description}</p>
+              <div key={step.number} className="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-sm">
+                <p className="text-3xl sm:text-4xl font-extrabold text-[#006B5E]/20">{step.number}</p>
+                <h3 className="mt-2 sm:mt-3 font-bold text-sm sm:text-base text-[#0F172A]">{step.title}</h3>
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm leading-relaxed text-slate-500">{step.description}</p>
               </div>
             ))}
           </div>
@@ -132,22 +132,22 @@ export function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="border-t border-border bg-white py-16 sm:py-20">
+      <section className="border-t border-border bg-white py-12 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center">
             <p className="cp-section-label">Everything you need</p>
-              <h2 className="mt-3 text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
+              <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0F172A]">
                 Everything you need for university and funding
               </h2>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 sm:mt-12 grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {MANAGED_FEATURES.map((f) => (
-              <div key={f.title} className="cp-card-hover p-6">
-                <div className={`cp-icon-box size-12 rounded-xl ${f.color}`}>
-                  <f.icon className="size-6" />
+              <div key={f.title} className="cp-card-hover p-5 sm:p-6">
+                <div className={`cp-icon-box size-10 sm:size-12 rounded-xl ${f.color}`}>
+                  <f.icon className="size-5 sm:size-6" />
                 </div>
-                <h3 className="mt-4 font-bold text-[#0F172A]">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">{f.description}</p>
+                <h3 className="mt-3 sm:mt-4 font-bold text-sm sm:text-base text-[#0F172A]">{f.title}</h3>
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm leading-relaxed text-slate-500">{f.description}</p>
               </div>
             ))}
           </div>
@@ -155,26 +155,26 @@ export function LandingPage() {
       </section>
 
       {/* POPIA / Disclaimer */}
-      <section className="border-t border-border bg-slate-50 py-12">
+      <section className="border-t border-border bg-slate-50 py-10 sm:py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-            <div className="flex items-start gap-4">
-              <Shield className="mt-0.5 size-5 shrink-0 text-amber-600" />
-              <div>
-                <p className="font-semibold text-amber-800">Important Disclaimer</p>
-                <p className="mt-1 text-sm text-amber-700">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <Shield className="mt-0.5 size-4 sm:size-5 shrink-0 text-amber-600" />
+              <div className="min-w-0">
+                <p className="font-semibold text-sm sm:text-base text-amber-800">Important Disclaimer</p>
+                <p className="mt-1 text-xs sm:text-sm text-amber-700">
                   CareerPath SA uses your profile, subjects, APS, and quiz answers to recommend suitable study options. Our team can prepare and submit university, TVET college, NSFAS, and bursary applications on your behalf once your information and documents are complete.
                 </p>
               </div>
             </div>
           </div>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <CheckCircle2 className="size-4 text-[#006B5E]" />
+          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+              <CheckCircle2 className="size-3 sm:size-4 text-[#006B5E]" />
               POPIA compliant — your data is safe
             </div>
             {!user && (
-              <Button asChild className="bg-[#006B5E] hover:bg-[#005548] text-white">
+              <Button asChild className="bg-[#006B5E] hover:bg-[#005548] text-white h-10 sm:h-11 text-sm">
                 <Link href="/signup">Start your journey <ArrowRight className="ml-2 size-4" /></Link>
               </Button>
             )}
