@@ -40,8 +40,6 @@ const TYPE_LABELS: Record<string, string> = {
   tvet: "TVET",
   nsfas: "NSFAS",
   bursary: "Bursary",
-  learnership: "Learnership",
-  internship: "Internship",
 };
 
 export function DashboardPage() {
@@ -133,17 +131,17 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 sm:gap-6">
       {/* Recent status updates — top priority */}
       {recentUpdates.length > 0 && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <MessageSquareText className="size-5 text-blue-600" />
-            <h2 className="font-extrabold text-blue-900">Recent Status Updates</h2>
+            <MessageSquareText className="size-4 sm:size-5 text-blue-600" />
+            <h2 className="font-extrabold text-blue-900 text-sm sm:text-base">Recent Status Updates</h2>
           </div>
           <div className="grid gap-2">
             {recentUpdates.map((update, i) => (
-              <div key={i} className="flex items-start gap-3 rounded-lg bg-white/70 px-4 py-3">
+              <div key={i} className="flex items-start gap-3 rounded-lg bg-white/70 px-3 sm:px-4 py-2.5 sm:py-3">
                 <CheckCircle2 className="size-4 shrink-0 text-blue-600 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-[#0F172A]">{update.message}</p>
@@ -158,12 +156,12 @@ export function DashboardPage() {
       )}
 
       {/* Welcome + APS + Access */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-3">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
+        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-3">
           <div>
             <div className="cp-section-label mb-2">Your Dashboard</div>
-            <h1 className="text-2xl font-extrabold text-[#0F172A]">Welcome, {firstName}!</h1>
-            <p className="mt-1 text-sm text-slate-500">{user?.email}</p>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">Welcome, {firstName}!</h1>
+            <p className="mt-1 text-sm text-slate-500 break-all">{user?.email}</p>
             {profile?.profile_submission_status && (
               <span className="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 capitalize">
                 Profile: {profile.profile_submission_status.replace("_", " ")}
@@ -171,15 +169,15 @@ export function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-xl border-2 border-[#006B5E] bg-[#E8F5F3] p-5 text-center">
+          <div className="rounded-xl border-2 border-[#006B5E] bg-[#E8F5F3] p-4 sm:p-5 text-center">
             <p className="text-xs font-bold uppercase text-[#006B5E] tracking-wider">APS Score</p>
-            <p className="mt-1 text-5xl font-extrabold text-[#006B5E]">{profile?.aps_score ?? "—"}</p>
+            <p className="mt-1 text-4xl sm:text-5xl font-extrabold text-[#006B5E]">{profile?.aps_score ?? "—"}</p>
             <p className="text-xs text-slate-600 mt-1">{profile?.aps_score ? "out of 42 points" : "Complete onboarding"}</p>
           </div>
 
-          <div className={`rounded-xl border-2 p-5 ${isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50"}`}>
+          <div className={`rounded-xl border-2 p-4 sm:p-5 ${isRural ? "border-[#006B5E]/30 bg-[#E8F5F3]" : "border-blue-200 bg-blue-50"}`}>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Access & Plan</p>
-            <p className={`mt-2 text-lg font-extrabold ${isRural ? "text-[#006B5E]" : "text-blue-700"}`}>
+            <p className={`mt-2 text-base sm:text-lg font-extrabold ${isRural ? "text-[#006B5E]" : "text-blue-700"}`}>
               {isRural ? "Free Rural Access" : "Paid Urban Plan"}
             </p>
             {plan && <p className="text-sm text-slate-600 mt-1">{plan.name} · {formatRand(plan.price)}</p>}
@@ -192,10 +190,10 @@ export function DashboardPage() {
         </div>
 
         {!profile?.onboarding_complete && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <AlertCircle className="size-5 shrink-0 text-amber-600" />
             <p className="text-sm text-amber-800 flex-1">Complete onboarding to unlock full recommendations and submissions.</p>
-            <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white shrink-0 h-10">
+            <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white shrink-0 h-10 w-full sm:w-auto">
               <Link href="/onboarding">Continue setup <ArrowRight className="ml-1 size-3" /></Link>
             </Button>
           </div>
@@ -203,19 +201,19 @@ export function DashboardPage() {
       </div>
 
       {/* Institution fees */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
+        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <div className="cp-section-label mb-1">Application Fees</div>
-            <h2 className="text-lg font-extrabold text-[#0F172A]">Selected Universities & TVET Colleges</h2>
+            <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">Selected Universities & TVET Colleges</h2>
           </div>
-          <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white h-10">
+          <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white h-10 w-full sm:w-auto">
             <Link href="/universities">Add more <ArrowRight className="ml-1 size-3" /></Link>
           </Button>
         </div>
 
         {institutionApps.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 p-8 text-center">
+          <div className="rounded-xl bg-slate-50 p-6 sm:p-8 text-center">
             <GraduationCap className="mx-auto mb-2 size-8 text-slate-300" />
             <p className="font-semibold text-[#0F172A]">No institutions selected yet</p>
             <Button asChild className="mt-4 bg-[#006B5E] hover:bg-[#005548] text-white h-11">
@@ -224,31 +222,31 @@ export function DashboardPage() {
           </div>
         ) : (
           <>
-            <div className="mb-4 grid grid-cols-3 gap-3">
-              <div className="rounded-lg border border-border bg-slate-50 p-3 text-center">
-                <p className="text-xs font-bold text-slate-500 uppercase">Total</p>
-                <p className="mt-1 text-xl font-extrabold">R{totalFeeAmount.toLocaleString()}</p>
+            <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-lg border border-border bg-slate-50 p-2 sm:p-3 text-center">
+                <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Total</p>
+                <p className="mt-1 text-base sm:text-xl font-extrabold truncate">R{totalFeeAmount.toLocaleString()}</p>
               </div>
-              <div className="rounded-lg border border-[#006B5E]/20 bg-[#E8F5F3] p-3 text-center">
-                <p className="text-xs font-bold text-[#006B5E] uppercase">Paid</p>
-                <p className="mt-1 text-xl font-extrabold text-[#006B5E]">R{paidAmount.toLocaleString()}</p>
+              <div className="rounded-lg border border-[#006B5E]/20 bg-[#E8F5F3] p-2 sm:p-3 text-center">
+                <p className="text-[10px] sm:text-xs font-bold text-[#006B5E] uppercase">Paid</p>
+                <p className="mt-1 text-base sm:text-xl font-extrabold text-[#006B5E] truncate">R{paidAmount.toLocaleString()}</p>
               </div>
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
-                <p className="text-xs font-bold text-red-700 uppercase">Unpaid</p>
-                <p className="mt-1 text-xl font-extrabold text-red-700">R{unpaidAmount.toLocaleString()}</p>
+              <div className="rounded-lg border border-red-200 bg-red-50 p-2 sm:p-3 text-center">
+                <p className="text-[10px] sm:text-xs font-bold text-red-700 uppercase">Unpaid</p>
+                <p className="mt-1 text-base sm:text-xl font-extrabold text-red-700 truncate">R{unpaidAmount.toLocaleString()}</p>
               </div>
             </div>
             <div className="grid gap-2">
               {institutionApps.map((app) => (
-                <div key={app.id} className="flex items-center justify-between rounded-lg border border-border bg-slate-50 p-4">
-                  <div>
-                    <p className="font-semibold text-[#0F172A]">{app.institution_name}</p>
+                <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border bg-slate-50 p-3 sm:p-4 gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm sm:text-base text-[#0F172A] truncate">{app.institution_name}</p>
                     <p className="text-xs text-slate-500">
                       {app.institution_type === "university" ? "University" : "TVET College"}
-                      {app.programme ? ` · ${app.programme}` : ""}
+                      {app.programme ? ` · ${truncateText(app.programme, 30)}` : ""}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="text-sm font-bold">
                       {app.application_fee === 0 ? "Free" : `R${app.application_fee.toLocaleString()}`}
                     </p>
@@ -263,7 +261,7 @@ export function DashboardPage() {
               ))}
             </div>
             {unpaidInstitutionFees.length > 0 && (
-              <Button asChild className="mt-4 w-full h-11 bg-amber-600 hover:bg-amber-700 text-white">
+              <Button asChild className="mt-4 w-full h-11 bg-amber-600 hover:bg-amber-700 text-white text-sm">
                 <Link href="/applications">
                   <CreditCard className="size-4 mr-2" />
                   Pay {unpaidInstitutionFees.length} Unpaid Fee{unpaidInstitutionFees.length === 1 ? "" : "s"} (R{unpaidAmount.toLocaleString()})
@@ -275,15 +273,15 @@ export function DashboardPage() {
       </div>
 
       {/* All application statuses */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
         <div className="mb-4">
           <div className="cp-section-label mb-1">Application Tracker</div>
-          <h2 className="text-lg font-extrabold text-[#0F172A]">Current Status of All Applications</h2>
-          <p className="text-sm text-slate-500">Universities, NSFAS, Bursaries, and Learnerships</p>
+          <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">Current Status of All Applications</h2>
+          <p className="text-sm text-slate-500">Track your university, NSFAS, and bursary applications</p>
         </div>
 
         {allTrackedApps.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 p-8 text-center">
+          <div className="rounded-xl bg-slate-50 p-6 sm:p-8 text-center">
             <BookOpen className="mx-auto mb-2 size-8 text-slate-300" />
             <p className="font-semibold text-[#0F172A]">No applications tracked yet</p>
             <p className="text-sm text-slate-500 mt-1">Submit your profile or select institutions to start.</p>
@@ -293,12 +291,12 @@ export function DashboardPage() {
             {allTrackedApps.map((app) => {
               const statusInfo = STATUS_LABELS[app.status] ?? STATUS_LABELS.todo;
               return (
-                <div key={app.id} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[#0F172A]">{app.name}</p>
+                <div key={app.id} className="flex items-center justify-between rounded-lg border border-border px-3 sm:px-4 py-2.5 sm:py-3 gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#0F172A] truncate">{app.name}</p>
                     <p className="text-xs text-slate-500">{TYPE_LABELS[app.type] ?? app.type}</p>
                   </div>
-                  <span className={`text-xs font-semibold rounded-full px-3 py-1 ${statusInfo.color}`}>
+                  <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${statusInfo.color}`}>
                     {statusInfo.label}
                   </span>
                 </div>
@@ -306,33 +304,31 @@ export function DashboardPage() {
             })}
           </div>
         )}
-        <Button asChild variant="outline" className="mt-4 w-full h-11">
+        <Button asChild variant="outline" className="mt-4 w-full h-11 text-sm">
           <Link href="/applications">View full submissions tracker <ArrowRight className="ml-2 size-4" /></Link>
         </Button>
       </div>
 
       {/* Quick actions */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-bold text-[#0F172A]">Quick Actions</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { href: "/careers", icon: Target, label: "Career Match", desc: "AI career recommendations" },
-            { href: "/universities", icon: GraduationCap, label: "Universities", desc: "Browse & select institutions" },
-            { href: "/funding", icon: CreditCard, label: "Funding", desc: "NSFAS & bursaries" },
-            { href: "/applications", icon: BookOpen, label: "Submissions", desc: "Track all applications" },
-            { href: "/profile", icon: Sparkles, label: "Profile", desc: "Edit your details" },
-            ...(!isRural ? [{ href: "/plans", icon: CreditCard, label: "Plans", desc: "Manage your paid plan" }] : []),
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
+        <h2 className="mb-4 font-bold text-base sm:text-lg text-[#0F172A]">Quick Actions</h2>
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+          { href: "/careers", icon: Target, label: "Career Match", desc: "AI career recommendations" },
+          { href: "/universities", icon: GraduationCap, label: "Universities", desc: "Browse & select institutions" },
+          { href: "/funding", icon: CreditCard, label: "Funding", desc: "NSFAS & bursaries" },
+          { href: "/applications", icon: BookOpen, label: "Submissions", desc: "Track all applications" },
+          { href: "/profile", icon: Sparkles, label: "Profile", desc: "Edit your details" },
+          ...(!isRural ? [{ href: "/plans", icon: CreditCard, label: "Plans", desc: "Manage your paid plan" }] : []),
           ].map((action) => (
-            <Link key={action.href} href={action.href}>
-              <a className="flex items-center gap-3 rounded-lg border border-border bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
-                <div className="grid size-10 place-items-center rounded-xl bg-[#E8F5F3] text-[#006B5E]">
-                  <action.icon className="size-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#0F172A]">{action.label}</p>
-                  <p className="text-xs text-slate-500">{action.desc}</p>
-                </div>
-              </a>
+            <Link key={action.href} href={action.href} className="flex items-center gap-3 rounded-lg border border-border bg-white p-3 sm:p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#E8F5F3] text-[#006B5E]">
+                <action.icon className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#0F172A]">{action.label}</p>
+                <p className="text-xs text-slate-500 truncate">{action.desc}</p>
+              </div>
             </Link>
           ))}
         </div>
@@ -340,20 +336,18 @@ export function DashboardPage() {
 
       {/* Career matches */}
       {profile?.onboarding_complete && matchedCareers.length > 0 && (
-        <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-extrabold text-[#0F172A]">Recommended Careers</h2>
+            <h2 className="font-extrabold text-base sm:text-lg text-[#0F172A]">Recommended Careers</h2>
             <Button asChild variant="ghost" size="sm" className="text-[#006B5E]">
               <Link href="/careers">View all</Link>
             </Button>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
             {matchedCareers.map((career) => (
-              <Link key={career.id} href="/careers">
-                <a className="rounded-xl border border-border p-4 hover:border-[#006B5E]/50 transition-colors">
-                  <p className="text-sm font-bold text-[#0F172A]">{career.title}</p>
-                  <p className="text-xs text-slate-500 mt-1">{career.field}</p>
-                </a>
+              <Link key={career.id} href="/careers" className="rounded-xl border border-border p-3 sm:p-4 hover:border-[#006B5E]/50 transition-colors block">
+                <p className="text-sm font-bold text-[#0F172A]">{career.title}</p>
+                <p className="text-xs text-slate-500 mt-1">{career.field}</p>
               </Link>
             ))}
           </div>
@@ -361,12 +355,12 @@ export function DashboardPage() {
       )}
 
       {/* Disclaimers */}
-      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6">
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-6">
         <div className="flex gap-3">
           <AlertCircle className="size-5 shrink-0 text-blue-600 mt-0.5" />
-          <div>
-            <p className="font-bold text-blue-900">Important Information</p>
-            <ul className="mt-2 space-y-2 text-sm text-blue-800 list-disc list-inside">
+          <div className="min-w-0">
+            <p className="font-bold text-blue-900 text-sm sm:text-base">Important Information</p>
+            <ul className="mt-2 space-y-1.5 text-sm text-blue-800 list-disc list-inside">
               <li>CareerPath SA provides application support. Outcomes remain subject to each institution.</li>
               <li>Your data is encrypted and protected under POPIA compliance.</li>
               <li>
@@ -380,4 +374,8 @@ export function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function truncateText(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + "…" : text;
 }

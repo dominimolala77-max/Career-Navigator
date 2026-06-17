@@ -9,6 +9,7 @@ export interface PaymentRequest {
   name?: string;
   reference: string;
   planId?: string;
+  applicationId?: string;
 }
 
 const PAYFAST_URLS = {
@@ -89,6 +90,7 @@ export async function startStripeCheckout(request: PaymentRequest) {
       email: request.email,
       reference: request.reference,
       planId: request.planId,
+      applicationId: request.applicationId,
       currency: request.amount ? "zar" : undefined,
     }),
   });

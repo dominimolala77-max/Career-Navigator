@@ -18,10 +18,8 @@ export function PlansPage() {
       return;
     }
 
-    // Prefer Stripe payments server if configured, otherwise PayFast if configured
     if ((import.meta.env.VITE_PAYMENTS_SERVER_URL)) {
       try {
-        // dynamic import to avoid adding runtime dependency here
         const payments = await import("@/lib/payments");
         await payments.startStripeCheckout({
           kind: "plan",
@@ -54,21 +52,18 @@ export function PlansPage() {
         toast({ title: "Payment failed to start", description: String(e), variant: "destructive" });
       }
       return;
-    }
-
-    else {
-      // fallback simulation when payment gateway is not configured
+    } else {
       localStorage.setItem(`purchased_plan:${user.id}`, plan.id);
       toast({ title: "Purchase simulated", description: "Payment gateway not configured — plan saved locally." });
-      // navigate user to onboarding to continue
       window.location.href = "/onboarding";
     }
   }
+
   return (
-    <div className="grid gap-6">
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+    <div className="grid gap-4 sm:gap-6">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
         <div className="cp-section-label mb-2">Plans comparison</div>
-        <h1 className="text-2xl font-extrabold text-[#0F172A]">Choose your CareerPath SA plan</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">Choose your CareerPath SA plan</h1>
         <p className="mt-1 text-sm text-slate-500">
           {accessTier === "free"
             ? "You qualify for free rural access. Plans below are for urban users only."
@@ -77,9 +72,9 @@ export function PlansPage() {
       </div>
 
       {accessTier === "free" && (
-        <div className="rounded-2xl border border-[#006B5E]/30 bg-[#E8F5F3] p-5 flex gap-3">
+        <div className="rounded-2xl border border-[#006B5E]/30 bg-[#E8F5F3] p-4 sm:p-5 flex gap-3">
           <MapPin className="size-5 shrink-0 text-[#006B5E] mt-0.5" />
-          <div>
+          <div className="min-w-0">
             <p className="font-bold text-[#006B5E]">Free Rural Access Active</p>
             <p className="text-sm text-[#006B5E]/80 mt-1">
               Your GPS location qualifies you for unlimited free supported applications. No plan purchase needed.
@@ -88,17 +83,17 @@ export function PlansPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         {PRICING_PLANS.map((plan) => (
-          <div key={plan.id} className="cp-card-hover flex flex-col p-5 cp-clickable">
+          <div key={plan.id} className="cp-card-hover flex flex-col p-4 sm:p-5 cp-clickable">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-extrabold text-[#0F172A]">{plan.name}</h2>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">{plan.name}</h2>
                 <p className="mt-1 text-sm text-slate-500">{plan.tagline}</p>
               </div>
-              {plan.id === "priority_unlimited" && <span className="cp-badge-blue">Priority</span>}
+              {plan.id === "priority_unlimited" && <span className="cp-badge-blue shrink-0">Priority</span>}
             </div>
-            <p className="mt-4 text-4xl font-extrabold text-[#006B5E]">{formatRand(plan.price)}</p>
+            <p className="mt-4 text-3xl sm:text-4xl font-extrabold text-[#006B5E]">{formatRand(plan.price)}</p>
             <p className="text-xs font-semibold uppercase text-slate-400">one-time payment</p>
             <div className="mt-5 grid gap-3 text-sm">
               {[
@@ -113,20 +108,20 @@ export function PlansPage() {
                 </p>
               ))}
             </div>
-            <Button onClick={() => handlePurchase(plan)} className="mt-6 bg-[#006B5E] text-white hover:bg-[#005548]">
+            <Button onClick={() => handlePurchase(plan)} className="mt-6 bg-[#006B5E] text-white hover:bg-[#005548] w-full text-sm">
               Select plan
             </Button>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-          <p className="flex items-center gap-2 font-bold text-blue-900"><CreditCard className="size-4" /> Application fee payments</p>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:p-5">
+          <p className="flex items-center gap-2 font-bold text-blue-900 text-sm"><CreditCard className="size-4" /> Application fee payments</p>
           <p className="mt-2 text-sm text-blue-800">Institution fees are tracked separately from your CareerPath SA plan. You can mark each university fee as Paid or Unpaid from the applications tracker.</p>
         </div>
-        <div className="rounded-2xl border border-[#006B5E]/20 bg-[#E8F5F3] p-5">
-          <p className="flex items-center gap-2 font-bold text-[#0F172A]"><ShieldCheck className="size-4 text-[#006B5E]" /> POPIA and security</p>
+        <div className="rounded-2xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4 sm:p-5">
+          <p className="flex items-center gap-2 font-bold text-[#0F172A] text-sm"><ShieldCheck className="size-4 text-[#006B5E]" /> POPIA and security</p>
           <p className="mt-2 text-sm text-slate-700">Personal data should be processed only for managed applications, support, status updates, legal compliance, and user-authorised service delivery.</p>
         </div>
       </div>

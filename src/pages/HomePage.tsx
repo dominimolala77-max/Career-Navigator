@@ -26,7 +26,7 @@ const features = [
   {
     icon: FileText,
     title: "Managed submission center",
-    description: "Track university, NSFAS, bursary, and opportunity requests from one place.",
+    description: "Track university, TVET, NSFAS, and bursary application requests from one place.",
   },
   {
     icon: TrendingUp,
@@ -49,7 +49,7 @@ const onboardingSteps = [
   {
     icon: CalendarCheck2,
     title: "Organise applications & funding",
-    description: "Prepare NSFAS, bursaries, learnerships and closing dates in one place.",
+    description: "Prepare university applications, NSFAS, and bursary deadlines in one place.",
   },
   {
     icon: Sparkles,
@@ -95,11 +95,11 @@ export function HomePage() {
 
           <div className="grid gap-5">
             <h1 className="max-w-4xl text-5xl font-semibold leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-              Find the study path that changes your year.
+              Your University & Funding Assistant
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600">
-              Career Navigator helps learners complete their profile, answer personality quizzes,
-              choose suitable courses, and get matched to universities while submissions are managed for them.
+              Career Navigator helps you apply to universities and TVET colleges, check NSFAS eligibility,
+              find relevant bursaries, and track everything — while our team handles the submissions for you.
             </p>
           </div>
 
@@ -185,7 +185,7 @@ export function HomePage() {
               Start your guided South African career journey
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-              Build a complete profile, discover study pathways, match bursaries, and track every managed submission in one place.
+              Build a complete profile, discover study pathways, match bursaries to your chosen institutions, and track every managed submission in one place.
             </p>
           </div>
           <div className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-950/5 p-5 text-slate-700">

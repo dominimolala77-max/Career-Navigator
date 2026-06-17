@@ -1,45 +1,45 @@
-import { ArrowRight, BookOpen, Briefcase, CheckCircle2, GraduationCap, Search, Shield, Star, Users, Wallet } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, GraduationCap, Search, Shield, Star, Users, Wallet, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/AuthProvider";
 
 const FEATURES = [
   { icon: Search, title: "Smart Career Matching", description: "Answer a few questions about yourself and get personalised career recommendations based on your APS, subjects, and personality.", color: "bg-[#E8F5F3] text-[#006B5E]" },
-  { icon: GraduationCap, title: "University & TVET Guide", description: "Browse all 26 South African public universities and TVET colleges. Filter by province, APS, and field of study.", color: "bg-blue-50 text-blue-700" },
-  { icon: Wallet, title: "NSFAS & Bursaries", description: "Check NSFAS eligibility, gather required details, and discover bursaries matched to your profile.", color: "bg-amber-50 text-amber-700" },
-  { icon: Briefcase, title: "Learnerships & Internships", description: "Find learnerships, internships, apprenticeships, and graduate programmes matched to your profile.", color: "bg-purple-50 text-purple-700" },
-  { icon: BookOpen, title: "Managed Applications", description: "Track every university, NSFAS, bursary, and opportunity submission we manage for you.", color: "bg-rose-50 text-rose-700" },
+  { icon: GraduationCap, title: "University & TVET Applications", description: "Browse all 26 SA universities and TVET colleges. Filter by province, APS, and field of study — we handle the submissions.", color: "bg-blue-50 text-blue-700" },
+  { icon: Wallet, title: "NSFAS & Bursaries", description: "Check NSFAS eligibility, gather required details, and discover bursaries matched to your chosen institutions.", color: "bg-amber-50 text-amber-700" },
+  { icon: BookOpen, title: "Managed Submissions", description: "Track every university, NSFAS, and bursary application we prepare and submit for you.", color: "bg-rose-50 text-rose-700" },
   { icon: Shield, title: "Secure & Compliant", description: "Your data is protected under the POPI Act and securely stored.", color: "bg-slate-50 text-slate-700" },
+  { icon: Sparkles, title: "In-App Fee Payments", description: "Pay university application fees directly inside the app — no separate EFTs needed.", color: "bg-purple-50 text-purple-700" },
 ];
 
 const MANAGED_FEATURES = [
   { icon: Search, title: "Smart Career Matching", description: "Answer a few questions about yourself and get personalised recommendations based on your APS, subjects, and personality.", color: "bg-[#E8F5F3] text-[#006B5E]" },
-  { icon: GraduationCap, title: "University & TVET Guide", description: "Browse South African universities and TVET colleges, then see the options that fit your course goals and profile.", color: "bg-blue-50 text-blue-700" },
-  { icon: Wallet, title: "NSFAS & Bursaries", description: "Check NSFAS eligibility, gather required details, and discover bursaries matched to your profile.", color: "bg-amber-50 text-amber-700" },
-  { icon: Briefcase, title: "Learnerships & Internships", description: "Find learnerships, internships, apprenticeships, and graduate programmes matched to your profile.", color: "bg-purple-50 text-purple-700" },
-  { icon: BookOpen, title: "Managed Applications", description: "Complete your profile, choose your options, and track the university, NSFAS, and bursary applications we submit for you.", color: "bg-rose-50 text-rose-700" },
+  { icon: GraduationCap, title: "University & TVET Applications", description: "Browse SA universities and TVET colleges, then let our team handle the full submission process for you.", color: "bg-blue-50 text-blue-700" },
+  { icon: Wallet, title: "NSFAS & Bursaries", description: "Check NSFAS eligibility, gather required docs, and discover bursaries linked to your chosen institutions.", color: "bg-amber-50 text-amber-700" },
+  { icon: BookOpen, title: "Managed Submissions", description: "Complete your profile, choose your options, and track the university, NSFAS, and bursary applications we submit for you.", color: "bg-rose-50 text-rose-700" },
   { icon: Shield, title: "Secure & Compliant", description: "Your data is protected under the POPI Act and securely stored.", color: "bg-slate-50 text-slate-700" },
+  { icon: Sparkles, title: "In-App Fee Payments", description: "Pay university and TVET application fees directly inside the app with Stripe or PayFast.", color: "bg-purple-50 text-purple-700" },
 ];
 
 const STEPS = [
   { number: "01", title: "Create your account", description: "Sign up in seconds using your email." },
   { number: "02", title: "Build your profile", description: "Add your country, subjects, APS score, personality, and career goals." },
   { number: "03", title: "Get recommendations", description: "Receive personalised career paths, universities, and funding matches." },
-  { number: "04", title: "We submit for you", description: "Track managed submissions, statuses, and deadlines without applying by yourself." },
+  { number: "04", title: "We submit for you", description: "Our team handles your university, NSFAS, and bursary applications so you don't have to." },
 ];
 
 const MANAGED_STEPS = [
   { number: "01", title: "Create your account", description: "Sign up in seconds using your email." },
   { number: "02", title: "Build your profile", description: "Add your personal details, subjects, APS score, personality quiz, and career goals." },
   { number: "03", title: "Get recommendations", description: "Receive personalised course, university, and funding matches based on your profile." },
-  { number: "04", title: "We submit for you", description: "Select your preferred options, track statuses, and let our team handle university and NSFAS submissions." },
+  { number: "04", title: "We submit for you", description: "Select your preferred options and let our team handle your university, NSFAS, and bursary submissions." },
 ];
 
 const STATS = [
   { value: "26", label: "SA Universities" },
   { value: "15+", label: "Open Bursaries" },
   { value: "25+", label: "Career Paths" },
-  { value: "12+", label: "Opportunities" },
+  { value: "50+", label: "TVET Colleges" },
 ];
 
 export function LandingPage() {
@@ -57,11 +57,11 @@ export function LandingPage() {
                 For anyone studying in South Africa
               </div>
               <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-[#0F172A] sm:text-5xl lg:text-6xl">
-                Your Career Journey<br />
-                <span className="text-[#006B5E]">Starts Here</span>
+                Your University &<br />
+                <span className="text-[#006B5E]">Funding Assistant</span>
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-slate-600">
-                CareerPath SA helps students complete profiles, answer personality quizzes, choose study paths, and get matched to universities while our team manages university and NSFAS submissions.
+                CareerPath SA helps you apply to universities and TVET colleges, check NSFAS eligibility, find relevant bursaries, and track everything — while our team handles the submissions for you.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 {user ? (
@@ -80,7 +80,7 @@ export function LandingPage() {
                 )}
               </div>
               <p className="mt-4 text-xs text-slate-400">
-                Paid managed service from R249 once your account is created. Secure under POPIA.
+                Paid managed service from R249. Free rural access available in qualifying provinces. Secure under POPIA.
               </p>
             </div>
 
@@ -98,9 +98,9 @@ export function LandingPage() {
                     <Users className="size-6" />
                   </div>
                   <div>
-                    <p className="font-bold text-[#0F172A]">Helping students everywhere</p>
+                    <p className="font-bold text-[#0F172A]">Get assisted with University Applications, NSFAS & Bursaries</p>
                     <p className="mt-1 text-sm text-slate-600">
-                      Whether you're from SA or anywhere else in the world — get career guidance matched to the South African education system.
+                      We specialise in university and TVET admissions, NSFAS funding, and bursaries linked to your chosen institutions.
                     </p>
                   </div>
                 </div>
@@ -115,9 +115,9 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center">
             <p className="cp-section-label">How it works</p>
-            <h2 className="mt-3 text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
-              From confusion to clarity in 4 steps
-            </h2>
+              <h2 className="mt-3 text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
+                From application to admission in 4 steps
+              </h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {MANAGED_STEPS.map((step) => (
@@ -136,9 +136,9 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center">
             <p className="cp-section-label">Everything you need</p>
-            <h2 className="mt-3 text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
-              One app for your entire career journey
-            </h2>
+              <h2 className="mt-3 text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
+                Everything you need for university and funding
+              </h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {MANAGED_FEATURES.map((f) => (
@@ -163,7 +163,7 @@ export function LandingPage() {
               <div>
                 <p className="font-semibold text-amber-800">Important Disclaimer</p>
                 <p className="mt-1 text-sm text-amber-700">
-                  CareerPath SA uses your profile, subjects, APS, and quiz answers to recommend suitable study options. Our team can prepare and submit university, NSFAS, and selected funding applications on your behalf once your information and documents are complete.
+                  CareerPath SA uses your profile, subjects, APS, and quiz answers to recommend suitable study options. Our team can prepare and submit university, TVET college, NSFAS, and bursary applications on your behalf once your information and documents are complete.
                 </p>
               </div>
             </div>

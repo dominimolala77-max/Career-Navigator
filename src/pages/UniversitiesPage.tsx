@@ -120,51 +120,55 @@ export function UniversitiesPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 sm:gap-6">
       {/* Header */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
         <div className="cp-section-label mb-2">Institution Browser</div>
-        <h1 className="text-2xl font-extrabold text-[#0F172A]">South African Universities & Colleges</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">South African Universities & Colleges</h1>
         <p className="mt-1 text-sm text-slate-500">
           Browse universities, private institutions, and TVET colleges. Filter by province and APS, then choose the options you want us to prepare and submit for you.
         </p>
       </div>
 
       {/* Disclaimer */}
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
         <div className="flex gap-3">
           <AlertCircle className="size-5 shrink-0 text-amber-600 mt-0.5" />
-          <div>
-            <p className="font-semibold text-amber-900 mb-1">Important Information About Institutions</p>
-            <p className="text-sm text-amber-800">
-              Institution details, fees, requirements, and application procedures are subject to change without notice. Always verify directly with institutions for the most current information. Selection of an institution does not guarantee admission. Admission outcomes are subject to each institution's policies and selection criteria.
+          <div className="min-w-0">
+            <p className="font-semibold text-amber-900 mb-1 text-sm">Important Information About Institutions</p>
+            <p className="text-xs sm:text-sm text-amber-800">
+              Institution details, fees, requirements, and application procedures are subject to change without notice. Always verify directly with institutions for the most current information.
             </p>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-48">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-          <Input className="pl-9 h-10" placeholder="Search institutions…" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9 h-10 w-full" placeholder="Search institutions…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        {[
-          { label: "Province", value: province, setter: setProvince, options: ["All", ...PROVINCES] },
-          { label: "Type", value: type, setter: setType, options: ["All", "public_university", "university_of_technology", "private_institution", "tvet_college"] },
-        ].map(f => (
-          <select key={f.label}
-            className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
-            value={f.value} onChange={e => f.setter(e.target.value)}>
-            {f.options.map(o => <option key={o} value={o}>{f.label === "Type" && o !== "All" ? TYPE_LABELS[o] ?? o : o}</option>)}
-          </select>
-        ))}
-        <Input className="h-10 w-32" placeholder="Min APS" type="number" value={apsFilter} onChange={e => setApsFilter(e.target.value)} />
+        <select
+          className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E] w-full sm:w-auto"
+          value={province} onChange={e => setProvince(e.target.value)}>
+          <option value="All">All Provinces</option>
+          {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select
+          className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E] w-full sm:w-auto"
+          value={type} onChange={e => setType(e.target.value)}>
+          <option value="All">All Types</option>
+          {(["public_university", "university_of_technology", "private_institution", "tvet_college"] as const).map(o => (
+            <option key={o} value={o}>{TYPE_LABELS[o]}</option>
+          ))}
+        </select>
+        <Input className="h-10 w-full sm:w-28" placeholder="Min APS" type="number" value={apsFilter} onChange={e => setApsFilter(e.target.value)} />
         
         {profile?.aps_score && (
           <Button 
             variant={showRecommended ? "default" : "outline"}
-            className={showRecommended ? "bg-[#006B5E] text-white" : ""}
+            className={showRecommended ? "bg-[#006B5E] text-white w-full sm:w-auto" : "w-full sm:w-auto"}
             onClick={() => setShowRecommended(!showRecommended)}
           >
             {showRecommended ? "Recommended: ON" : "Recommended for Me"}
@@ -172,7 +176,7 @@ export function UniversitiesPage() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <p className="text-sm text-slate-500">{displayed.length} institution{displayed.length !== 1 ? "s" : ""} found</p>
         {profile?.aps_score && showRecommended && (
           <p className="text-xs text-[#006B5E] font-medium">Filtered by your APS ({profile.aps_score})</p>
@@ -180,18 +184,18 @@ export function UniversitiesPage() {
       </div>
 
       {/* Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {displayed.map(u => (
-          <div key={u.id} className="cp-card flex flex-col p-5">
+          <div key={u.id} className="cp-card flex flex-col p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className={TYPE_COLORS[u.type]}>{TYPE_LABELS[u.type]}</span>
                   {profile?.aps_score && u.minAps <= profile.aps_score && (
                     <span className="bg-[#E8F5F3] text-[#006B5E] text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-[#006B5E]/20">MATCH</span>
                   )}
                 </div>
-                <h3 className="font-bold text-[#0F172A]">{u.name}</h3>
+                <h3 className="font-bold text-sm sm:text-base text-[#0F172A]">{u.name}</h3>
                 <p className="text-xs text-slate-500">{u.province}</p>
               </div>
             </div>
@@ -210,8 +214,8 @@ export function UniversitiesPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSelected(u)}>View Details</Button>
-              <Button size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white" onClick={() => setApplying(u)}>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => setSelected(u)}>View Details</Button>
+              <Button size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white text-xs" onClick={() => setApplying(u)}>
                 Request Submission
               </Button>
             </div>
@@ -221,17 +225,17 @@ export function UniversitiesPage() {
 
       {/* Detail Modal */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-start justify-between border-b border-border p-6">
-              <div>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40">
+          <div className="w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
+            <div className="flex items-start justify-between border-b border-border p-4 sm:p-6 sticky top-0 bg-white">
+              <div className="min-w-0">
                 <span className={`${TYPE_COLORS[selected.type]} mb-2 inline-block`}>{TYPE_LABELS[selected.type]}</span>
-                <h2 className="text-xl font-extrabold text-[#0F172A]">{selected.name}</h2>
+                <h2 className="text-lg sm:text-xl font-extrabold text-[#0F172A]">{selected.name}</h2>
                 <p className="text-sm text-slate-500">{selected.province}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+              <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none shrink-0 ml-2">&times;</button>
             </div>
-            <div className="p-6 grid gap-4 text-sm">
+            <div className="p-4 sm:p-6 grid gap-4 text-sm">
               <p className="text-slate-600 leading-relaxed">{selected.description}</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -250,15 +254,15 @@ export function UniversitiesPage() {
                 <div className="grid gap-2">
                   {selected.programmes.map(p => (
                     <div key={p.name} className="rounded-lg border border-border p-3">
-                      <p className="font-bold text-[#0F172A]">{p.name}</p>
+                      <p className="font-bold text-[#0F172A] text-sm">{p.name}</p>
                       <p className="text-xs text-slate-500">{p.faculty} · APS {p.apsRequired} · {p.duration}</p>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>
-                <Button className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white" onClick={() => { setSelected(null); setApplying(selected); }}>
+                <Button variant="outline" className="flex-1 text-xs sm:text-sm" onClick={() => setSelected(null)}>Close</Button>
+                <Button className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white text-xs sm:text-sm" onClick={() => { setSelected(null); setApplying(selected); }}>
                   Request Submission <ArrowRight className="ml-1 size-3" />
                 </Button>
               </div>
@@ -269,17 +273,17 @@ export function UniversitiesPage() {
 
       {/* Apply Modal */}
       {applying && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-border p-6">
-              <div>
-                <h2 className="text-lg font-extrabold text-[#0F172A]">Request submission to {applying.name}</h2>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40">
+          <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-border p-4 sm:p-6 sticky top-0 bg-white">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">Request submission to {applying.name}</h2>
                 <p className="text-sm text-slate-500">{applying.province}</p>
               </div>
-              <button onClick={() => setApplying(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+              <button onClick={() => setApplying(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none shrink-0 ml-2">&times;</button>
             </div>
-            <div className="p-6 grid gap-4">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="p-4 sm:p-6 grid gap-4">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4 text-xs sm:text-sm text-amber-800">
                 <p className="font-semibold mb-1">Application fee: R{getInstitutionApplicationFee(applying)}</p>
                 <p>Select the programme you want. We will add it to your tracker with fee status set to {getInstitutionApplicationFee(applying) === 0 ? "Not required" : "Unpaid"}.</p>
               </div>
@@ -300,8 +304,8 @@ export function UniversitiesPage() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button variant="outline" className="flex-1" onClick={() => setApplying(null)}>Cancel</Button>
-                <Button onClick={handleApply} disabled={saving || !programme} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
+                <Button variant="outline" className="flex-1 text-xs sm:text-sm" onClick={() => setApplying(null)}>Cancel</Button>
+                <Button onClick={handleApply} disabled={saving || !programme} className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white gap-2 text-xs sm:text-sm">
                   {saving ? "Saving..." : "Save Request"}
                 </Button>
               </div>

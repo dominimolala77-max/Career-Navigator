@@ -91,6 +91,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    /* Prevent text size adjustment on mobile orientation change */
+    -webkit-text-size-adjust: 100%;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', system-ui, sans-serif;
@@ -145,5 +147,25 @@
   }
   .page-container {
     @apply mx-auto max-w-7xl px-4 sm:px-6;
+  }
+  
+  /* Mobile-safe utilities */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Prevent horizontal overflow */
+  .overflow-x-clip {
+    overflow-x: clip;
+  }
+  /* Touch-friendly tap targets */
+  .tap-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 }

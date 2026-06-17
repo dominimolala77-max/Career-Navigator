@@ -47,7 +47,7 @@ export interface Profile {
 export interface Application {
   id: string;
   user_id: string;
-  type: "university" | "tvet" | "nsfas" | "bursary" | "learnership" | "internship" | "apprenticeship" | "graduate_programme";
+  type: "university" | "tvet" | "nsfas" | "bursary";
   institution: string;
   programme?: string;
   status: "todo" | "in_progress" | "submitted" | "accepted" | "rejected" | "waitlisted";

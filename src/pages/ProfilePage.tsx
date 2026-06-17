@@ -99,31 +99,31 @@ export function ProfilePage() {
   ];
 
   return (
-    <div className="grid gap-6 max-w-2xl">
+    <div className="grid gap-4 sm:gap-6 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex items-start gap-4">
-          <div className="grid size-16 place-items-center rounded-2xl bg-[#E8F5F3] text-[#006B5E]">
-            <User className="size-8" />
+          <div className="grid size-14 sm:size-16 shrink-0 place-items-center rounded-2xl bg-[#E8F5F3] text-[#006B5E]">
+            <User className="size-6 sm:size-8" />
           </div>
-          <div>
-            <h1 className="text-2xl font-extrabold text-[#0F172A]">{fullName || "Your Profile"}</h1>
-            <p className="text-sm text-slate-500">{user?.email}</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">{fullName || "Your Profile"}</h1>
+            <p className="text-sm text-slate-500 break-all">{user?.email}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {profile?.aps_score ? <span className="cp-badge-amber">APS {profile.aps_score}</span> : null}
               {personalityLabel && <span className="cp-badge-blue">{personalityLabel.icon} {personalityLabel.label}</span>}
               {plan && <span className="cp-badge-primary"><CreditCard className="size-3" /> {plan.name}</span>}
               {profile?.onboarding_complete
-                ? <span className="cp-badge-primary"><GraduationCap className="size-3" /> Profile Complete</span>
-                : <span className="cp-badge-amber">Profile Incomplete</span>}
+                ? <span className="cp-badge-primary"><GraduationCap className="size-3" /> Complete</span>
+                : <span className="cp-badge-amber">Incomplete</span>}
             </div>
           </div>
         </div>
 
         {!profile?.onboarding_complete && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm text-amber-800 flex-1">Your onboarding is not complete. Finish it for personalised recommendations.</p>
-            <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white shrink-0">
+            <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white shrink-0 w-full sm:w-auto">
               <Link href="/onboarding">Complete <ArrowRight className="ml-1 size-3" /></Link>
             </Button>
           </div>
@@ -132,11 +132,11 @@ export function ProfilePage() {
 
       {/* APS Card */}
       {profile?.aps_score && profile.aps_score > 0 && (
-        <div className="rounded-2xl border border-[#006B5E]/20 bg-[#E8F5F3] p-5">
+        <div className="rounded-2xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4 sm:p-5">
           <h2 className="font-bold text-[#0F172A] mb-3">Your APS Score</h2>
-          <div className="flex items-center gap-4">
-            <p className="text-5xl font-extrabold text-[#006B5E]">{profile.aps_score}</p>
-            <div>
+          <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row">
+            <p className="text-4xl sm:text-5xl font-extrabold text-[#006B5E]">{profile.aps_score}</p>
+            <div className="min-w-0">
               <p className="text-sm text-slate-600">out of 42 points</p>
               <p className="text-xs text-slate-500 mt-1">
                 {profile.aps_score >= 40 ? "Excellent — qualifies for Medicine, Law, Engineering" :
@@ -160,15 +160,15 @@ export function ProfilePage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
-          <p className="mb-3 flex items-center gap-2 font-bold text-[#0F172A]"><FileText className="size-4 text-[#006B5E]" /> Uploaded Documents</p>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-white p-4 sm:p-5 shadow-sm">
+          <p className="mb-3 flex items-center gap-2 font-bold text-[#0F172A] text-sm"><FileText className="size-4 text-[#006B5E]" /> Uploaded Documents</p>
           {profile?.certified_documents?.length ? (
             <div className="grid gap-2">
               {profile.certified_documents.map((doc) => (
                 <div key={doc.type} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
                   <span className="truncate text-slate-700">{doc.name}</span>
-                  <span className={doc.uploaded ? "cp-badge-primary" : "cp-badge-red"}>{doc.uploaded ? "Uploaded" : "Missing"}</span>
+                  <span className={doc.uploaded ? "cp-badge-primary shrink-0" : "cp-badge-red shrink-0"}>{doc.uploaded ? "Uploaded" : "Missing"}</span>
                 </div>
               ))}
             </div>
@@ -176,15 +176,15 @@ export function ProfilePage() {
             <p className="text-sm text-slate-500">No certified documents uploaded yet.</p>
           )}
         </div>
-        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
-          <p className="mb-3 flex items-center gap-2 font-bold text-[#0F172A]"><GraduationCap className="size-4 text-blue-600" /> Selected Institutions</p>
+        <div className="rounded-2xl border border-border bg-white p-4 sm:p-5 shadow-sm">
+          <p className="mb-3 flex items-center gap-2 font-bold text-[#0F172A] text-sm"><GraduationCap className="size-4 text-blue-600" /> Selected Institutions</p>
           {applications.filter(a => ["university", "tvet"].includes(a.type)).length ? (
             <div className="grid gap-2">
               {applications.filter(a => ["university", "tvet"].includes(a.type)).slice(0, 6).map((app) => (
                 <div key={app.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-[#0F172A]">{app.institution}</span>
-                    <span className={app.fee_payment_status === "paid" ? "cp-badge-primary" : app.fee_payment_status === "not_required" ? "cp-badge-blue" : "cp-badge-red"}>
+                    <span className="font-semibold text-[#0F172A] truncate">{app.institution}</span>
+                    <span className={app.fee_payment_status === "paid" ? "cp-badge-primary shrink-0" : app.fee_payment_status === "not_required" ? "cp-badge-blue shrink-0" : "cp-badge-red shrink-0"}>
                       {app.fee_payment_status === "not_required" ? "R0" : app.fee_payment_status === "paid" ? "Paid" : "Unpaid"}
                     </span>
                   </div>
@@ -199,20 +199,20 @@ export function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border">
+      <div className="flex gap-2 border-b border-border overflow-x-auto hide-scrollbar">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors ${activeTab === t.id ? "border-[#006B5E] text-[#006B5E]" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+            className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${activeTab === t.id ? "border-[#006B5E] text-[#006B5E]" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
         {/* Personal Tab */}
         {activeTab === "personal" && (
           <div className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div>
                 <Label>Full Name</Label>
                 <Input className="mt-1.5 h-11" value={fullName} onChange={e => setFullName(e.target.value)} />
@@ -246,7 +246,7 @@ export function ProfilePage() {
               <Label>Street Address</Label>
               <Input className="mt-1.5 h-11" value={address} onChange={e => setAddress(e.target.value)} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div>
                 <Label>City</Label>
                 <Input className="mt-1.5 h-11" value={city} onChange={e => setCity(e.target.value)} />
@@ -323,7 +323,7 @@ export function ProfilePage() {
             </div>
             {personalityLabel && (
               <div className="rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] p-4">
-                <p className="font-semibold text-[#006B5E]">Personality Type: {personalityLabel.icon} {personalityLabel.label}</p>
+                <p className="font-semibold text-[#006B5E] text-sm">Personality Type: {personalityLabel.icon} {personalityLabel.label}</p>
                 <p className="text-sm text-slate-600 mt-0.5">{personalityLabel.description}</p>
                 <p className="text-xs text-slate-400 mt-2">Retake personality quiz by <Link href="/onboarding" className="underline">redoing onboarding</Link></p>
               </div>
@@ -331,7 +331,7 @@ export function ProfilePage() {
           </div>
         )}
 
-        <div className="mt-6 flex items-center gap-3 border-t border-border pt-6">
+        <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 border-t border-border pt-6">
           <Button onClick={handleSave} disabled={saving} className="bg-[#006B5E] hover:bg-[#005548] text-white gap-2">
             <Save className="size-4" /> {saving ? "Saving…" : "Save Changes"}
           </Button>
@@ -342,13 +342,13 @@ export function ProfilePage() {
       </div>
 
       {/* Data Protection & Security */}
-      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 mb-4">
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5 mb-4">
         <div className="flex gap-3">
           <AlertCircle className="size-5 shrink-0 text-blue-600 mt-0.5" />
-          <div>
-            <p className="font-semibold text-blue-900 mb-2">Data Protection & POPIA Compliance</p>
+          <div className="min-w-0">
+            <p className="font-semibold text-blue-900 mb-2 text-sm">Data Protection & POPIA Compliance</p>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>✓ Your personal information is processed securely under POPIA (Protection of Personal Information Act)</li>
+              <li>✓ Your personal information is processed securely under POPIA</li>
               <li>✓ Data is used only for career guidance, applications, and support services</li>
               <li>✓ Login credentials are encrypted and never shared</li>
               <li>✓ You have the right to access, correct, or delete your data</li>
@@ -359,8 +359,8 @@ export function ProfilePage() {
       </div>
 
       {/* Danger Zone */}
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-        <p className="font-semibold text-red-800 mb-1">Account & Data Management</p>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-4 sm:p-5">
+        <p className="font-semibold text-red-800 mb-1 text-sm">Account & Data Management</p>
         <p className="text-sm text-red-700 mb-4">Sign out of your account or manage your data. Account deletion will remove all personal data in accordance with POPIA.</p>
         <div className="flex flex-wrap gap-3">
           <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-100" onClick={() => signOut()}>Sign Out</Button>

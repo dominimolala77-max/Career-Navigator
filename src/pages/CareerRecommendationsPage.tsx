@@ -63,11 +63,11 @@ export function CareerRecommendationsPage() {
     : null;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 sm:gap-6">
       {/* Header */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
         <div className="cp-section-label mb-2">Career Matching</div>
-        <h1 className="text-2xl font-extrabold text-[#0F172A]">Your Career Recommendations</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">Your Career Recommendations</h1>
         <p className="mt-1 text-sm text-slate-500">
           Matched based on your APS score, subjects, and personality profile.
         </p>
@@ -81,9 +81,9 @@ export function CareerRecommendationsPage() {
           </div>
         )}
         {!profile?.onboarding_complete && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm text-amber-800 flex-1">Complete your profile to get personalised career matches.</p>
-            <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white shrink-0">
+            <Button asChild size="sm" className="bg-[#006B5E] hover:bg-[#005548] text-white shrink-0 w-full sm:w-auto">
               <Link href="/onboarding">Complete profile</Link>
             </Button>
           </div>
@@ -91,13 +91,13 @@ export function CareerRecommendationsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-48">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-          <Input className="pl-9 h-10" placeholder="Search careers…" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9 h-10 w-full" placeholder="Search careers…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select
-          className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E]"
+          className="h-10 rounded-lg border border-border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#006B5E] w-full sm:w-auto"
           value={fieldFilter} onChange={e => setFieldFilter(e.target.value)}>
           {allFields.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
@@ -106,15 +106,15 @@ export function CareerRecommendationsPage() {
       <p className="text-sm text-slate-500">{displayed.length} career{displayed.length !== 1 ? "s" : ""} found</p>
 
       {/* Career Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {displayed.map(career => (
-          <div key={career.id} className="cp-card-hover flex flex-col p-5">
+          <div key={career.id} className="cp-card-hover flex flex-col p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-bold text-[#0F172A]">{career.title}</h3>
+              <div className="min-w-0">
+                <h3 className="font-bold text-sm sm:text-base text-[#0F172A]">{career.title}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{career.field}</p>
               </div>
-              <span className={DEMAND_COLORS[career.jobDemand]}>{DEMAND_LABELS[career.jobDemand]}</span>
+              <span className={DEMAND_COLORS[career.jobDemand] + " shrink-0"}>{DEMAND_LABELS[career.jobDemand]}</span>
             </div>
 
             <p className="mt-3 text-sm text-slate-600 leading-relaxed line-clamp-2">{career.description}</p>
@@ -143,10 +143,10 @@ export function CareerRecommendationsPage() {
             )}
 
             <div className="mt-4 flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelected(career)}>
+              <Button variant="outline" size="sm" className="flex-1 text-xs sm:text-sm" onClick={() => setSelected(career)}>
                 View Details
               </Button>
-              <Button asChild size="sm" className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
+              <Button asChild size="sm" className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white text-xs sm:text-sm">
                 <Link href={`/universities?field=${encodeURIComponent(career.field)}`}>
                   Find Universities <ArrowRight className="ml-1 size-3" />
                 </Link>
@@ -158,32 +158,32 @@ export function CareerRecommendationsPage() {
 
       {/* Detail Modal */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-white shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-start justify-between border-b border-border p-6">
-              <div>
-                <h2 className="text-xl font-extrabold text-[#0F172A]">{selected.title}</h2>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40">
+          <div className="w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-white shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
+            <div className="flex items-start justify-between border-b border-border p-4 sm:p-6 sticky top-0 bg-white">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-extrabold text-[#0F172A]">{selected.title}</h2>
                 <p className="text-sm text-slate-500">{selected.field}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+              <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none shrink-0 ml-2">&times;</button>
             </div>
-            <div className="p-6 grid gap-4">
+            <div className="p-4 sm:p-6 grid gap-4">
               <p className="text-sm text-slate-600 leading-relaxed">{selected.description}</p>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-slate-50 p-4">
+                <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
                   <p className="text-xs text-slate-400">Minimum APS</p>
-                  <p className="text-xl font-extrabold text-[#0F172A]">{selected.minAps}</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-[#0F172A]">{selected.minAps}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-4">
+                <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
                   <p className="text-xs text-slate-400">Study Duration</p>
-                  <p className="text-xl font-extrabold text-[#0F172A]">{selected.studyYears} Years</p>
+                  <p className="text-lg sm:text-xl font-extrabold text-[#0F172A]">{selected.studyYears} Years</p>
                 </div>
-                <div className="rounded-xl bg-[#E8F5F3] p-4">
+                <div className="rounded-xl bg-[#E8F5F3] p-3 sm:p-4">
                   <p className="text-xs text-[#006B5E]">Salary Range (ZAR)</p>
-                  <p className="text-lg font-extrabold text-[#006B5E]">{fmt(selected.salaryRangeZAR.min)} – {fmt(selected.salaryRangeZAR.max)}</p>
+                  <p className="text-base sm:text-lg font-extrabold text-[#006B5E]">{fmt(selected.salaryRangeZAR.min)} – {fmt(selected.salaryRangeZAR.max)}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-4">
+                <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
                   <p className="text-xs text-slate-400">Qualification</p>
                   <p className="text-sm font-bold text-[#0F172A]">{selected.degreeLevel}</p>
                 </div>
@@ -224,8 +224,8 @@ export function CareerRecommendationsPage() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>
-                <Button asChild className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white">
+                <Button variant="outline" className="flex-1 text-xs sm:text-sm" onClick={() => setSelected(null)}>Close</Button>
+                <Button asChild className="flex-1 bg-[#006B5E] hover:bg-[#005548] text-white text-xs sm:text-sm">
                   <Link href="/universities">Find Universities <ArrowRight className="ml-1 size-3" /></Link>
                 </Button>
               </div>

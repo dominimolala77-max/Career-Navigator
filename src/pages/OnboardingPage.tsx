@@ -787,7 +787,7 @@ export function OnboardingPage() {
                 <div className="cp-icon-box"><Sparkles className="size-5" /></div>
                 <div>
                   <h2 className="text-lg font-extrabold text-[#0F172A]">Submit profile for processing</h2>
-                  <p className="text-sm text-slate-500">Our admin team takes over university, NSFAS, bursary, and learnership applications.</p>
+                  <p className="text-sm text-slate-500">Our admin team takes over university, TVET, NSFAS, and bursary applications.</p>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -813,7 +813,7 @@ export function OnboardingPage() {
               )}
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                 <p className="font-bold">Professional disclaimer</p>
-                <p className="mt-1">CareerPath SA provides application support and recommendations. Admission, funding, bursary, and learnership outcomes remain subject to each institution or provider.</p>
+                <p className="mt-1">CareerPath SA provides application support and recommendations. Admission, funding, and bursary outcomes remain subject to each institution or provider.</p>
               </div>
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
                 <p className="flex items-center gap-2 font-bold"><LockKeyhole className="size-4" /> Security and POPIA</p>

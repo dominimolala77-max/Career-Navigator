@@ -11,6 +11,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { SignupPage } from "@/pages/SignupPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import PaymentReturnPage from "@/pages/PaymentReturnPage";
+import PaymentCancelPage from "@/pages/PaymentCancelPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { CareerRecommendationsPage } from "@/pages/CareerRecommendationsPage";
 import { UniversitiesPage } from "@/pages/UniversitiesPage";
@@ -43,6 +44,11 @@ function App() {
             <Route path="/payment/success">
               <RequireAuth>
                 <PaymentReturnPage />
+              </RequireAuth>
+            </Route>
+            <Route path="/payment/cancel">
+              <RequireAuth>
+                <PaymentCancelPage />
               </RequireAuth>
             </Route>
             <Route path="/dashboard">

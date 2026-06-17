@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
-  BookOpen, Briefcase, CreditCard, GraduationCap, LayoutDashboard,
+  BookOpen, CreditCard, GraduationCap, LayoutDashboard,
   LogOut, Menu, Search, User, Wallet, X,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -14,13 +14,23 @@ import { useToast } from "@/hooks/use-toast";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/careers", label: "Career Match", icon: Search },
-  { href: "/universities", label: "Universities", icon: GraduationCap },
+  { href: "/universities", label: "Institutions", icon: GraduationCap },
   { href: "/funding", label: "Funding", icon: Wallet },
-  { href: "/opportunities", label: "Opportunities", icon: Briefcase },
   { href: "/applications", label: "Submissions", icon: BookOpen },
   { href: "/plans", label: "Plans", icon: CreditCard },
   { href: "/profile", label: "Profile", icon: User },
 ];
+
+// Truncated labels for bottom nav (mobile)
+const BOTTOM_NAV_LABELS: Record<string, string> = {
+  "/dashboard": "Home",
+  "/careers": "Careers",
+  "/universities": "Schools",
+  "/funding": "Funding",
+  "/applications": "Apps",
+  "/plans": "Plans",
+  "/profile": "Profile",
+};
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, signOut, isLoading } = useAuth();
@@ -42,14 +52,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Top Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-white shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
           <Link href={user ? "/dashboard" : "/"}>
-            <a className="flex items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-lg bg-[#006B5E] text-white shadow-sm">
-                <GraduationCap className="size-5" />
+            <a className="flex items-center gap-2">
+              <span className="grid size-8 place-items-center rounded-lg bg-[#006B5E] text-white shadow-sm sm:size-9">
+                <GraduationCap className="size-4 sm:size-5" />
               </span>
               <span className="hidden font-bold text-[#0F172A] sm:block">
                 CareerPath <span className="text-[#006B5E]">SA</span>
@@ -79,7 +89,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </nav>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {!isLoading && !user ? (
               <>
                 <Button asChild variant="ghost" size="sm">
@@ -99,6 +109,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <button
                     className="flex size-9 items-center justify-center rounded-lg border border-border bg-white text-slate-600 lg:hidden"
                     onClick={() => setMobileOpen(v => !v)}
+                    aria-label="Toggle navigation menu"
                   >
                     {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
                   </button>
@@ -113,8 +124,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {showNav && mobileOpen && (
         <div className="fixed inset-0 z-30 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-[57px] bottom-0 w-72 border-r border-border bg-white shadow-xl">
-            <nav className="flex flex-col gap-1 p-4">
+          <div className="absolute left-0 top-[57px] bottom-0 w-72 max-w-[80vw] border-r border-border bg-white shadow-xl safe-bottom">
+            <nav className="flex flex-col gap-1 overflow-y-auto p-4">
               {NAV_ITEMS.map((item) => {
                 const active = location === item.href;
                 return (
@@ -122,7 +133,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     <a
                       onClick={() => setMobileOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
+                        "flex items-center gap-3 rounded-lg px-4 py-3.5 text-sm font-medium transition-colors tap-target",
                         active
                           ? "bg-[#E8F5F3] text-[#006B5E]"
                           : "text-slate-700 hover:bg-slate-50"
@@ -137,7 +148,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <div className="mt-4 border-t border-border pt-4">
                 <button
                   onClick={onLogout}
-                  className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50"
+                  className="flex w-full items-center gap-3 rounded-lg px-4 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 tap-target"
                 >
                   <LogOut className="size-5" />
                   Sign out
@@ -150,26 +161,27 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Main Content */}
       <main className={cn(
-        "mx-auto max-w-7xl px-4 sm:px-6",
-        showNav ? "py-6" : "py-0"
+        "mx-auto max-w-7xl px-3 sm:px-6",
+        showNav ? "py-4 sm:py-6" : "py-0"
       )}>
         {children}
       </main>
 
-      {/* Mobile Bottom Nav */}
+      {/* Mobile Bottom Nav - ALL items */}
       {showNav && (
-        <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white px-2 pb-safe lg:hidden">
-          <div className="flex items-center justify-around py-2">
-            {NAV_ITEMS.slice(0, 5).map((item) => {
+        <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-white safe-bottom lg:hidden">
+          <div className="flex items-stretch justify-around">
+            {NAV_ITEMS.map((item) => {
               const active = location === item.href;
+              const mobileLabel = BOTTOM_NAV_LABELS[item.href] || item.label;
               return (
                 <Link key={item.href} href={item.href}>
                   <a className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors",
+                    "flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium transition-colors min-w-0 flex-1",
                     active ? "text-[#006B5E]" : "text-slate-500"
                   )}>
                     <item.icon className={cn("size-5", active && "text-[#006B5E]")} />
-                    {item.label.split(" ")[0]}
+                    <span className="truncate w-full text-center leading-tight">{mobileLabel}</span>
                   </a>
                 </Link>
               );
@@ -179,7 +191,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Spacer for bottom nav */}
-      {showNav && <div className="h-20 lg:h-0" />}
+      {showNav && <div className="h-[68px] lg:h-0" />}
     </div>
   );
 }
