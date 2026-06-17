@@ -1,4 +1,5 @@
 import { Briefcase, Clock, Sparkles } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
 export function OpportunitiesPage() {
@@ -47,7 +48,7 @@ export function OpportunitiesPage() {
             </ul>
             <div className="mt-4">
               <Button asChild className="bg-[#006B5E] hover:bg-[#005548] text-white">
-                <a href="/dashboard">Go to Dashboard</a>
+                <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
             </div>
           </div>

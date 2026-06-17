@@ -107,7 +107,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </Button>
                 {showNav && (
                   <button
-                    className="flex size-9 items-center justify-center rounded-lg border border-border bg-white text-slate-600 lg:hidden"
+                    className="flex size-11 items-center justify-center rounded-lg border border-border bg-white text-slate-600 lg:hidden"
                     onClick={() => setMobileOpen(v => !v)}
                     aria-label="Toggle navigation menu"
                   >

@@ -332,7 +332,7 @@ export function FundingPage() {
       {/* Bursary Apply Modal */}
       {applyingBursary && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40">
-          <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl">
+          <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh]">
             <div className="flex items-start justify-between border-b border-border p-4 sm:p-6 sticky top-0 bg-white">
               <div className="min-w-0">
                 <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">{applyingBursary.name}</h2>
