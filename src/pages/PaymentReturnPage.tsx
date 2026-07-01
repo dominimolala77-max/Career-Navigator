@@ -5,6 +5,7 @@ import { getProfile, upsertProfile, getInstitutionApplications } from "@/lib/sup
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, CreditCard, XCircle } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 
 export default function PaymentReturnPage() {
   const { user } = useAuth();
@@ -77,7 +78,7 @@ export default function PaymentReturnPage() {
   if (loading) return (
     <div className="flex items-center justify-center py-24">
       <div className="text-center">
-        <div className="mx-auto mb-4 size-10 animate-spin rounded-full border-4 border-[#006B5E] border-t-transparent" />
+        <Spinner size={40} />
         <p className="text-sm text-slate-500">Verifying payment...</p>
       </div>
     </div>

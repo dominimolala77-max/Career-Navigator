@@ -14,8 +14,9 @@ const YOCO_API_URL = "https://payments.yoco.com/api/checkouts";
 const YOCO_WEBHOOK_SECRET = process.env.YOCO_WEBHOOK_SECRET;
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
-const SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "http://localhost:5173/payment/return";
-const CANCEL_URL = process.env.STRIPE_CANCEL_URL || "http://localhost:5173/payment/cancel";
+const APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || "http://localhost:5173";
+const SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || `${APP_URL.replace(/\/$/, "")}/payment/return`;
+const CANCEL_URL = process.env.STRIPE_CANCEL_URL || `${APP_URL.replace(/\/$/, "")}/payment/cancel`;
 const PORT = process.env.PORT || 4242;
 
 if (!STRIPE_SECRET) {
@@ -36,6 +37,76 @@ if (!supabase) {
   console.warn("Supabase service role key or URL not provided. Webhooks will not update profiles/applications.");
 }
 
+function timingSafeEqualString(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+function verifyYocoCheckoutSignature(req) {
+  if (!YOCO_WEBHOOK_SECRET) return { ok: true };
+
+  const webhookSignature = req.headers["webhook-signature"];
+  const webhookId = req.headers["webhook-id"];
+  const webhookTimestamp = req.headers["webhook-timestamp"];
+
+  if (webhookSignature && webhookId && webhookTimestamp) {
+    if (!YOCO_WEBHOOK_SECRET.startsWith("whsec_")) {
+      return {
+        ok: false,
+        reason: "YOCO_WEBHOOK_SECRET must be the Checkout webhook secret that starts with whsec_.",
+      };
+    }
+
+    const timestampSeconds = Number(webhookTimestamp);
+    if (!Number.isFinite(timestampSeconds)) {
+      return { ok: false, reason: "invalid webhook-timestamp header" };
+    }
+
+    const maxSkewSeconds = 3 * 60;
+    const ageSeconds = Math.abs(Date.now() / 1000 - timestampSeconds);
+    if (ageSeconds > maxSkewSeconds) {
+      return { ok: false, reason: "webhook timestamp outside the 3 minute replay window" };
+    }
+
+    const rawBody = Buffer.isBuffer(req.rawBody) ? req.rawBody.toString("utf8") : String(req.rawBody || "");
+    const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`;
+    const secretBytes = Buffer.from(YOCO_WEBHOOK_SECRET.split("_")[1], "base64");
+    const expectedSignature = crypto
+      .createHmac("sha256", secretBytes)
+      .update(signedContent)
+      .digest("base64");
+
+    const signatures = String(webhookSignature)
+      .split(" ")
+      .map((entry) => entry.split(","))
+      .filter(([version, signature]) => version === "v1" && signature)
+      .map(([, signature]) => signature);
+
+    if (signatures.some((signature) => timingSafeEqualString(expectedSignature, signature))) {
+      return { ok: true };
+    }
+
+    return { ok: false, reason: "invalid webhook-signature header" };
+  }
+
+  // Compatibility with older/local test payloads that used a raw hex HMAC header.
+  const legacySignature = req.headers["x-yoco-signature"];
+  if (legacySignature) {
+    const computed = crypto
+      .createHmac("sha256", YOCO_WEBHOOK_SECRET)
+      .update(req.rawBody || JSON.stringify(req.body))
+      .digest("hex");
+
+    if (timingSafeEqualString(computed, legacySignature)) {
+      return { ok: true };
+    }
+
+    return { ok: false, reason: "invalid x-yoco-signature header" };
+  }
+
+  return { ok: false, reason: "missing Yoco webhook signature headers" };
+}
 const app = express();
 app.use(cors());
 
@@ -323,6 +394,11 @@ app.post("/yoco/create-checkout", express.json(), async (req, res) => {
 
     const amountInCents = Math.round(Number(amount) * 100);
 
+    // Yoco does not accept payments under R2 (200 cents)
+    if (amountInCents < 200) {
+      return res.status(400).json({ error: "Amount must be at least R2.00 (Yoco minimum)" });
+    }
+
     const queryParams = `kind=${encodeURIComponent(kind || "")}&ref=${encodeURIComponent(reference || "")}`;
     const successUrl = `${SUCCESS_URL}?${queryParams}`;
     const cancelUrl = `${CANCEL_URL}?${queryParams}`;
@@ -355,6 +431,34 @@ app.post("/yoco/create-checkout", express.json(), async (req, res) => {
       return res.status(502).json({ error: data.message || "Yoco checkout creation failed" });
     }
 
+    // Persist a pending payment record in Supabase so webhooks can reconcile later.
+    try {
+      if (supabase) {
+        function looksLikeUuid(v) {
+          return typeof v === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(v);
+        }
+
+        const insert = {
+          checkout_id: data.id || null,
+          amount: amountInCents,
+          currency: String(currency).toUpperCase(),
+          status: "pending",
+          // Only set user_id when it looks like a UUID (Supabase auth user id)
+          user_id: looksLikeUuid(userId) ? userId : null,
+          reference: reference || (looksLikeUuid(userId) ? "" : String(userId || "")),
+          kind: kind || null,
+          plan_id: planId || null,
+          application_id: applicationId || null,
+          created_at: new Date().toISOString(),
+        };
+        const { error: insertErr } = await supabase.from("payments").insert(insert);
+        if (insertErr) console.error("Supabase insert payments error:", insertErr);
+        else console.log(`Inserted pending payment for checkout ${data.id}`);
+      }
+    } catch (err) {
+      console.error("Error inserting pending payment row:", err);
+    }
+
     return res.json({ url: data.redirectUrl, id: data.id });
   } catch (err) {
     console.error("Yoco create-checkout error:", err);
@@ -364,56 +468,88 @@ app.post("/yoco/create-checkout", express.json(), async (req, res) => {
 
 // =============================================================================
 // YOCO: Webhook
-// BUG FIX #6: The original code sent res.status(200).json({ received: true }) BEFORE
-// verifying the signature, then returned early inside the async block without sending
-// another response — but the early `return` after the warning still caused
-// "Cannot set headers after they are sent" crashes because the code path below the
-// early return continued in some Node versions. Restructured so 200 is sent first
-// (Yoco requires fast ACK) and all subsequent logic is purely async with no further
-// response writes.
 // =============================================================================
 app.post("/yoco/webhook", express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }), async (req, res) => {
-  // Yoco requires a fast 200 ACK — send it immediately
+  const verification = verifyYocoCheckoutSignature(req);
+  if (!verification.ok) {
+    console.warn("Yoco webhook: signature verification failed:", verification.reason);
+    return res.status(403).json({ error: "invalid webhook signature" });
+  }
+
+  // Yoco requires a fast 2xx ACK. Supabase writes continue asynchronously below.
   res.status(200).json({ received: true });
 
-  // All processing below is fire-and-forget; never write to res again
+  // All processing below is fire-and-forget; never write to res again.
   (async () => {
     try {
-      if (YOCO_WEBHOOK_SECRET) {
-        const signature = req.headers["x-yoco-signature"];
-        if (!signature) {
-          console.warn("Yoco webhook: missing x-yoco-signature header");
-          return;
-        }
-
-        const computed = crypto
-          .createHmac("sha256", YOCO_WEBHOOK_SECRET)
-          .update(req.rawBody || JSON.stringify(req.body))
-          .digest("hex");
-
-        if (!crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature))) {
-          console.warn("Yoco webhook: invalid signature");
-          return;
-        }
-      }
-
       const event = req.body;
       console.log("Yoco webhook received:", event.type, event.id);
 
-      if (event.type !== "checkout.completed" && event.type !== "payment.completed") {
+      const successfulPaymentEvents = new Set(["payment.succeeded", "checkout.completed", "payment.completed"]);
+      if (!successfulPaymentEvents.has(event.type)) {
         console.log(`Yoco webhook: ignoring event type ${event.type}`);
         return;
       }
 
-      const data = event.data || {};
+      const data = event.payload || event.data || {};
       const metadata = data.metadata || {};
-      const userId = metadata.userId || null;
+      const userId = metadata.userId || metadata.user_id || null;
       const kind = metadata.kind || null;
-      const planId = metadata.planId || null;
-      const applicationId = metadata.applicationId || null;
+      const planId = metadata.planId || metadata.plan_id || null;
+      const applicationId = metadata.applicationId || metadata.application_id || null;
 
+      // Attempt to locate the matching payments row. Support several possible keys
+      const checkoutIdCandidates = [data.checkoutId, data.id, metadata.checkoutId, metadata.checkout_id, metadata.reference, data.reference].filter(Boolean);
+
+      let paymentRow = null;
+      try {
+        if (supabase && checkoutIdCandidates.length > 0) {
+          const { data: rows, error: selErr } = await supabase
+            .from("payments")
+            .select("id,checkout_id,status")
+            .in("checkout_id", checkoutIdCandidates)
+            .limit(1);
+          if (selErr) console.error("Supabase payments select error:", selErr);
+          else if (rows && rows.length) paymentRow = rows[0];
+        }
+      } catch (err) {
+        console.error("Error querying payments row:", err);
+      }
+
+      // Idempotency: if the payment row already marked succeeded, skip updates
+      if (paymentRow && paymentRow.status === "succeeded") {
+        console.log("Payment already marked succeeded for checkout", paymentRow.checkout_id);
+        return;
+      }
+
+      // Update the payments row if found, otherwise log and continue
+      if (supabase && paymentRow) {
+        try {
+          const updatePayload = {
+            status: "succeeded",
+            amount: data.amount || data.amountInCents || undefined,
+            currency: data.currency || undefined,
+            updated_at: new Date().toISOString(),
+            raw_event: JSON.stringify(event),
+          };
+
+          // Try to pick masked card info if present
+          const card = data.card || data.payment_method || data.source || {};
+          if (card && (card.last4 || card.maskedPan || card.masked_pan || card.pan)) {
+            updatePayload.card_mask = card.last4 || card.maskedPan || card.masked_pan || card.pan;
+          }
+
+          const { error: updErr } = await supabase.from("payments").update(updatePayload).eq("id", paymentRow.id);
+          if (updErr) console.error("Supabase payments update error:", updErr);
+          else console.log(`Payments row ${paymentRow.id} updated to succeeded`);
+        } catch (err) {
+          console.error("Error updating payments row:", err);
+        }
+      } else {
+        console.warn("Yoco webhook: no payments row found to update for candidates:", checkoutIdCandidates);
+      }
       if (!supabase) {
         console.warn("Yoco webhook: Supabase not configured, cannot persist payment.");
         return;
@@ -459,7 +595,6 @@ app.post("/yoco/webhook", express.json({
     }
   })();
 });
-
 // =============================================================================
 // Start Server
 // =============================================================================

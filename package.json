@@ -7,7 +7,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "start:payments": "node server/stripe-server.mjs"
+    "start:payments": "node server/stripe-server.mjs",
+    "test:yoco:create": "node scripts/test-payments.js",
+    "test:yoco:webhook": "node scripts/send-test-webhook.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",

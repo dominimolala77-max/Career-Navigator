@@ -1,4 +1,5 @@
 import { CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { PRICING_PLANS, formatRand } from "@/data/plans";
@@ -10,6 +11,7 @@ import { MapPin } from "lucide-react";
 export function PlansPage() {
   const { user, accessTier } = useAuth();
   const { toast } = useToast();
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
 
   async function handlePurchase(plan: (typeof PRICING_PLANS)[number]) {
     const reference = `plan_${plan.id}_${Date.now()}`;
@@ -35,9 +37,12 @@ export function PlansPage() {
     // and misleading error toasts on every payment attempt.
     if (isYocoConfigured()) {
       try {
+        setProcessingPlanId(plan.id);
         await startYocoCheckout(commonRequest);
+        setProcessingPlanId(null);
         return;
       } catch (e) {
+        setProcessingPlanId(null);
         console.warn("Yoco checkout failed, trying Stripe:", e);
       }
     }
@@ -121,8 +126,8 @@ export function PlansPage() {
                 </p>
               ))}
             </div>
-            <Button onClick={() => handlePurchase(plan)} className="mt-6 bg-[#006B5E] text-white hover:bg-[#005548] w-full text-sm">
-              Select plan
+            <Button disabled={processingPlanId === plan.id} onClick={() => handlePurchase(plan)} className="mt-6 bg-[#006B5E] text-white hover:bg-[#005548] w-full text-sm">
+              {processingPlanId === plan.id ? "Processing..." : "Select plan"}
             </Button>
           </div>
         ))}

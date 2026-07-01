@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BookOpen, CalendarDays, CheckCircle2, Circle, CreditCard, MessageSquareText, Plus, Trash2, AlertCircle } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,7 +214,7 @@ export function ApplicationsPage() {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="text-center">
-          <div className="mx-auto mb-4 size-10 animate-spin rounded-full border-4 border-[#006B5E] border-t-transparent" />
+          <Spinner size={40} />
           <p className="text-sm text-slate-500">Loading submission requests...</p>
         </div>
       </div>

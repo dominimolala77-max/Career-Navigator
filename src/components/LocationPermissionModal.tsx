@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { AlertCircle, MapPin, Loader } from "lucide-react";
+import { AlertCircle, MapPin } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import {
   requestDeviceLocation,
@@ -106,7 +107,7 @@ export function LocationPermissionModal({
             >
               {isRequesting || isSaving ? (
                 <>
-                  <Loader className="size-4 animate-spin" />
+                  <Spinner size={18} />
                   {isSaving ? "Saving location…" : "Detecting location…"}
                 </>
               ) : (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Spinner from "@/components/ui/spinner";
 import {
   ArrowRight,
   BookOpen,
@@ -123,7 +124,7 @@ export function DashboardPage() {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="text-center">
-          <div className="mx-auto mb-4 size-10 animate-spin rounded-full border-4 border-[#006B5E] border-t-transparent" />
+          <Spinner size={40} />
           <p className="text-sm text-slate-500">Loading your dashboard…</p>
         </div>
       </div>

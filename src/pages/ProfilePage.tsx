@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Spinner from "@/components/ui/spinner";
 import { ArrowRight, CreditCard, FileText, GraduationCap, Save, User, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -87,7 +88,7 @@ export function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="size-10 animate-spin rounded-full border-4 border-[#006B5E] border-t-transparent" />
+        <Spinner size={40} />
       </div>
     );
   }
