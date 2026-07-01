@@ -33,6 +33,32 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
+alter table public.profiles
+  add column if not exists full_name text,
+  add column if not exists race text,
+  add column if not exists province text,
+  add column if not exists grade text,
+  add column if not exists education_level text,
+  add column if not exists home_language text,
+  add column if not exists subjects jsonb,
+  add column if not exists aps_score integer,
+  add column if not exists personality_answers jsonb,
+  add column if not exists personality_type text,
+  add column if not exists preferred_fields text[],
+  add column if not exists funding_type text,
+  add column if not exists household_income text,
+  add column if not exists sa_citizen boolean,
+  add column if not exists id_number text,
+  add column if not exists phone text,
+  add column if not exists address text,
+  add column if not exists city text,
+  add column if not exists postal_code text,
+  add column if not exists onboarding_complete boolean default false,
+  add column if not exists onboarding_step integer default 0,
+  add column if not exists avatar_url text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
 -- ─── APPLICATIONS ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.applications (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,6 +79,24 @@ CREATE TABLE IF NOT EXISTS public.applications (
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+alter table public.applications
+  add column if not exists user_id uuid references auth.users(id) on delete cascade not null,
+  add column if not exists type text not null,
+  add column if not exists institution text not null,
+  add column if not exists programme text,
+  add column if not exists status text default 'todo',
+  add column if not exists deadline date,
+  add column if not exists submission_date date,
+  add column if not exists reference_number text,
+  add column if not exists notes text,
+  add column if not exists documents jsonb default '[]'::jsonb,
+  add column if not exists form_data jsonb default '{}'::jsonb,
+  add column if not exists priority text default 'medium',
+  add column if not exists province text,
+  add column if not exists amount text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
 
 -- ─── NSFAS APPLICATIONS ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.nsfas_applications (
@@ -102,30 +146,75 @@ CREATE TABLE IF NOT EXISTS public.nsfas_applications (
   updated_at              TIMESTAMPTZ DEFAULT NOW()
 );
 
+alter table public.nsfas_applications
+  add column if not exists user_id uuid references auth.users(id) on delete cascade not null,
+  add column if not exists status text default 'draft',
+  add column if not exists id_number text,
+  add column if not exists full_name text,
+  add column if not exists date_of_birth date,
+  add column if not exists gender text,
+  add column if not exists race text,
+  add column if not exists disability boolean default false,
+  add column if not exists disability_description text,
+  add column if not exists phone text,
+  add column if not exists email text,
+  add column if not exists address text,
+  add column if not exists city text,
+  add column if not exists province text,
+  add column if not exists postal_code text,
+  add column if not exists current_institution text,
+  add column if not exists intended_institution text,
+  add column if not exists intended_qualification text,
+  add column if not exists year_of_study integer,
+  add column if not exists household_income numeric,
+  add column if not exists father_employed boolean,
+  add column if not exists mother_employed boolean,
+  add column if not exists guardian_name text,
+  add column if not exists guardian_id text,
+  add column if not exists guardian_income numeric,
+  add column if not exists grant_sassa boolean default false,
+  add column if not exists sassa_amount numeric,
+  add column if not exists docs_id boolean default false,
+  add column if not exists docs_matric boolean default false,
+  add column if not exists docs_income_parents boolean default false,
+  add column if not exists docs_sassa boolean default false,
+  add column if not exists docs_bank_statement boolean default false,
+  add column if not exists docs_acceptance_letter boolean default false,
+  add column if not exists nsfas_reference text,
+  add column if not exists submitted_at timestamptz,
+  add column if not exists notes text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
 -- ─── ROW-LEVEL SECURITY ───────────────────────────────────────────────────────
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nsfas_applications ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+drop policy if exists "Users can view own profile" on public.profiles;
 CREATE POLICY "Users can view own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.profiles;
 CREATE POLICY "Users can insert own profile"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
 -- Applications policies
+DROP POLICY IF EXISTS "Users can manage own applications" ON public.applications;
 CREATE POLICY "Users can manage own applications"
   ON public.applications FOR ALL
   USING (auth.uid() = user_id);
 
 -- NSFAS applications policies
+DROP POLICY IF EXISTS "Users can manage own nsfas applications" ON public.nsfas_applications;
 CREATE POLICY "Users can manage own nsfas applications"
   ON public.nsfas_applications FOR ALL
   USING (auth.uid() = user_id);
@@ -139,14 +228,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_profiles_updated_at ON public.profiles;
 CREATE TRIGGER set_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_applications_updated_at ON public.applications;
 CREATE TRIGGER set_applications_updated_at
   BEFORE UPDATE ON public.applications
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_nsfas_updated_at ON public.nsfas_applications;
 CREATE TRIGGER set_nsfas_updated_at
   BEFORE UPDATE ON public.nsfas_applications
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();

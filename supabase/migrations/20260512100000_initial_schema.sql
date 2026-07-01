@@ -20,6 +20,14 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+alter table public.profiles
+  add column if not exists email text,
+  add column if not exists full_name text,
+  add column if not exists headline text,
+  add column if not exists location text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
 create table if not exists public.career_goals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -32,6 +40,17 @@ create table if not exists public.career_goals (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.career_goals
+  add column if not exists user_id uuid not null references auth.users(id) on delete cascade,
+  add column if not exists title text not null,
+  add column if not exists target_role text,
+  add column if not exists target_company text,
+  add column if not exists status text not null default 'active',
+  add column if not exists target_date date,
+  add column if not exists notes text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
 
 create table if not exists public.applications (
   id uuid primary key default gen_random_uuid(),
@@ -50,6 +69,19 @@ create table if not exists public.applications (
   updated_at timestamptz not null default now()
 );
 
+alter table public.applications
+  add column if not exists user_id uuid not null references auth.users(id) on delete cascade,
+  add column if not exists company text not null,
+  add column if not exists role text not null,
+  add column if not exists job_url text,
+  add column if not exists status text not null default 'saved',
+  add column if not exists applied_on date,
+  add column if not exists next_step text,
+  add column if not exists next_step_at timestamptz,
+  add column if not exists notes text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
 create table if not exists public.application_events (
   id uuid primary key default gen_random_uuid(),
   application_id uuid not null references public.applications(id) on delete cascade,
@@ -61,6 +93,16 @@ create table if not exists public.application_events (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.application_events
+  add column if not exists application_id uuid not null references public.applications(id) on delete cascade,
+  add column if not exists user_id uuid not null references auth.users(id) on delete cascade,
+  add column if not exists event_type text not null,
+  add column if not exists title text not null,
+  add column if not exists notes text,
+  add column if not exists event_at timestamptz not null default now(),
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
 
 create index if not exists profiles_email_idx on public.profiles (email);
 create index if not exists career_goals_user_id_idx on public.career_goals (user_id);
@@ -77,6 +119,7 @@ alter table public.career_goals enable row level security;
 alter table public.applications enable row level security;
 alter table public.application_events enable row level security;
 
+drop policy if exists "profiles_select_own" on public.profiles;
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
 on public.profiles

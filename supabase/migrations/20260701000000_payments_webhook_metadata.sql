@@ -1,6 +1,10 @@
 -- Ensure the payments table contains all columns and indexes used by the Yoco webhook flow.
--- This migration is intentionally idempotent so it can be applied safely against
--- both fresh and existing databases.
+-- This migration is intentionally idempotent and safe to run after the existing
+-- payments table migration. It only adds missing columns/indexes/policies and
+-- does not insert or delete any rows.
+--
+-- If the table already exists, CREATE TABLE IF NOT EXISTS does nothing, and
+-- ADD COLUMN IF NOT EXISTS only adds missing columns.
 
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid()

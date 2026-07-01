@@ -24,9 +24,21 @@ create table if not exists public.institution_applications (
   updated_at timestamptz default now()
 );
 
+alter table public.institution_applications
+  add column if not exists user_id uuid references auth.users(id) on delete cascade not null,
+  add column if not exists institution_type text not null check (institution_type in ('university', 'tvet')),
+  add column if not exists institution_name text not null,
+  add column if not exists programme text,
+  add column if not exists application_fee numeric default 0,
+  add column if not exists fee_payment_status text default 'unpaid' check (fee_payment_status in ('paid', 'unpaid', 'not_required')),
+  add column if not exists fee_paid_at timestamptz,
+  add column if not exists notes text,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();
+
 -- Enable RLS for institution_applications
 alter table public.institution_applications enable row level security;
-
+drop policy if exists "Users can manage own institution applications" on public.institution_applications;
 create policy "Users can manage own institution applications"
   on public.institution_applications for all
   using (auth.uid() = user_id);
