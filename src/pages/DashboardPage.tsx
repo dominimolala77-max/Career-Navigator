@@ -203,8 +203,8 @@ export function DashboardPage() {
 
       {/* Institution fees */}
       <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
-        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
+        <div className="mb-4 flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="min-w-0">
             <div className="cp-section-label mb-1">Application Fees</div>
             <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">Selected Universities & TVET Colleges</h2>
           </div>

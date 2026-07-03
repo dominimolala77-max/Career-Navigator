@@ -168,8 +168,8 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+          <div className="mt-4 sm:mt-6 flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 min-w-0">
               <CheckCircle2 className="size-3 sm:size-4 text-[#006B5E]" />
               POPIA compliant — your data is safe
             </div>

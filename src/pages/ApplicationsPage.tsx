@@ -276,8 +276,8 @@ export function ApplicationsPage() {
   return (
     <div className="grid gap-4 sm:gap-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm flex-1 w-full">
+      <div className="flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm flex-1 w-full min-w-0">
           <div className="cp-section-label mb-2">Managed Submission Tracker</div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">My Submission Requests</h1>
           <p className="mt-1 text-sm text-slate-500">Track the university, TVET, NSFAS, and bursary applications that are being prepared or submitted for you.</p>
@@ -302,8 +302,8 @@ export function ApplicationsPage() {
 
       {/* Institution Applications Section */}
       <div className="rounded-2xl border border-border bg-white p-4 sm:p-6 shadow-sm">
-        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+        <div className="mb-4 flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="min-w-0">
             <div className="cp-section-label mb-1">Selected Institutions</div>
             <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">Universities & TVET Colleges</h2>
             <p className="text-sm text-slate-500 mt-1">Manage application fees for your selected institutions</p>
@@ -631,8 +631,8 @@ export function ApplicationsPage() {
 
               {selected.fee_payment_status === "unpaid" && (
                 <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
+                  <div className="flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="min-w-0">
                       <p className="font-bold text-blue-900 text-sm">Application fee unpaid</p>
                       <p className="text-sm text-blue-800">Pay R{selected.application_fee ?? 0} inside the app to clear this item.</p>
                     </div>

@@ -176,10 +176,10 @@ export function UniversitiesPage() {
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <p className="text-sm text-slate-500">{displayed.length} institution{displayed.length !== 1 ? "s" : ""} found</p>
+      <div className="flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <p className="text-sm text-slate-500 min-w-0">{displayed.length} institution{displayed.length !== 1 ? "s" : ""} found</p>
         {profile?.aps_score && showRecommended && (
-          <p className="text-xs text-[#006B5E] font-medium">Filtered by your APS ({profile.aps_score})</p>
+          <p className="text-xs text-[#006B5E] font-medium min-w-0">Filtered by your APS ({profile.aps_score})</p>
         )}
       </div>
 

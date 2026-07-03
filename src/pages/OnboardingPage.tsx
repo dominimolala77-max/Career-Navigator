@@ -106,7 +106,7 @@ export function OnboardingPage() {
   const [documents, setDocuments] = useState<Record<string, string>>(() => (onboardingDraft?.documents as Record<string, string>) ?? {});
   const [subjects, setSubjects] = useState<Array<{ name: string; code: string; mark: number }>>(() => {
     const saved = onboardingDraft?.subjects as Array<{ name: string; code: string; mark: number }> | undefined;
-    return saved && saved.length > 0 ? saved : SA_SUBJECTS.slice(0, 7).map((s) => ({ name: s.name, code: s.code, mark: 0 }));
+    return saved && saved.length > 0 ? saved : [{ name: "Life Orientation", code: "LO", mark: 0 }];
   });
   const [answers, setAnswers] = useState<Record<string, string>>(() => (onboardingDraft?.answers as Record<string, string>) ?? {});
   const [preferredFields, setPreferredFields] = useState<string[]>(() => (onboardingDraft?.preferredFields as string[]) ?? []);
@@ -179,10 +179,6 @@ export function OnboardingPage() {
   }
 
   function removeSubject(subjectCode: string) {
-    if (subjects.length <= 6) {
-      toast({ title: "Minimum 6 subjects required", variant: "destructive" });
-      return;
-    }
     setSubjects((prev) => prev.filter((s) => s.code !== subjectCode));
   }
 
@@ -513,9 +509,9 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-[linear-gradient(180deg,#f8fbff_0%,#edf7f4_100%)] px-3 sm:px-4 py-4 sm:py-10">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl max-w-full">
         <div className="mb-4 sm:mb-6 rounded-2xl border border-white/80 bg-white/90 p-3 sm:p-4 shadow-sm backdrop-blur">
-          <div className="mb-3 flex items-center justify-between gap-4">
+          <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0">
               <div className="cp-section-label">Step-by-step onboarding</div>
               <h1 className="text-base sm:text-xl lg:text-2xl font-extrabold text-[#0F172A]">Set up your CareerPath SA profile</h1>
@@ -624,7 +620,7 @@ export function OnboardingPage() {
 
           {STEPS[step] === "Subjects" && (
             <div className="grid gap-5">
-              <div className="flex items-start sm:items-center justify-between gap-4 rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] p-3 sm:p-4">
+              <div className="flex flex-wrap items-start sm:items-center justify-between gap-4 rounded-xl border border-[#006B5E]/20 bg-[#E8F5F3] p-3 sm:p-4">
                 <div className="min-w-0">
                   <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">Subjects and percentages</h2>
                   <p className="text-sm text-slate-500">APS calculated in real-time. Life Orientation excluded.</p>
@@ -636,10 +632,10 @@ export function OnboardingPage() {
               </div>
               <div className="grid gap-3">
                 {subjects.map((subject) => (
-                  <div key={subject.code} className="grid grid-cols-[1fr,72px,36px,32px] sm:grid-cols-[1fr,88px,48px,36px] items-center gap-2 sm:gap-3 rounded-lg border border-border p-2 sm:p-3">
-                    <p className="truncate text-xs sm:text-sm font-semibold text-[#0F172A]">{subject.name}</p>
-                    <Input type="number" min={0} max={100} className="h-9 sm:h-10 text-center text-xs sm:text-sm" value={subject.mark || ""} placeholder="%" onChange={(e) => updateMark(subject.code, Number(e.target.value))} />
-                    <span className="text-center text-[10px] sm:text-xs font-bold text-[#006B5E]">{subject.code !== "LO" && subject.mark > 0 ? apsPoints(subject.mark) : "—"}</span>
+                  <div key={subject.code} className="grid min-w-0 grid-cols-[minmax(0,1fr),minmax(0,72px),minmax(0,36px),minmax(0,32px)] sm:grid-cols-[minmax(0,1fr),minmax(0,88px),minmax(0,48px),minmax(0,36px)] items-center gap-2 sm:gap-3 rounded-lg border border-border p-2 sm:p-3">
+                    <p className="min-w-0 truncate text-xs sm:text-sm font-semibold text-[#0F172A]">{subject.name}</p>
+                    <Input type="number" min={0} max={100} className="h-9 sm:h-10 text-center text-xs sm:text-sm min-w-0" value={subject.mark || ""} placeholder="%" onChange={(e) => updateMark(subject.code, Number(e.target.value))} />
+                    <span className="text-center text-[10px] sm:text-xs font-bold text-[#006B5E] min-w-0">{subject.code !== "LO" && subject.mark > 0 ? apsPoints(subject.mark) : "—"}</span>
                     <button
                       type="button"
                       onClick={() => removeSubject(subject.code)}
@@ -819,8 +815,8 @@ export function OnboardingPage() {
                 ))}
               </div>
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 sm:p-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
+                <div className="flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="font-bold text-[#0F172A] text-sm">Payment due: {formatRand(selectedPlanData.price)}</p>
                     <p className="text-sm text-slate-600">Secure in-app payment via Stripe or PayFast.</p>
                   </div>
