@@ -1,5 +1,4 @@
 import express from "express";
-import Stripe from "stripe";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
@@ -13,21 +12,14 @@ const YOCO_SECRET_KEY = process.env.YOCO_SECRET_KEY;
 const YOCO_API_URL = "https://payments.yoco.com/api/checkouts";
 const YOCO_WEBHOOK_SECRET = process.env.YOCO_WEBHOOK_SECRET;
 
-const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 const APP_URL = process.env.APP_URL || process.env.VITE_APP_URL || "http://localhost:5173";
-const SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || `${APP_URL.replace(/\/$/, "")}/payment/return`;
-const CANCEL_URL = process.env.STRIPE_CANCEL_URL || `${APP_URL.replace(/\/$/, "")}/payment/cancel`;
+const SUCCESS_URL = process.env.PAYMENT_SUCCESS_URL || `${APP_URL.replace(/\/$/, "")}/payment/return`;
+const CANCEL_URL = process.env.PAYMENT_CANCEL_URL || `${APP_URL.replace(/\/$/, "")}/payment/cancel`;
 const PORT = process.env.PORT || 4242;
-
-if (!STRIPE_SECRET) {
-  console.warn("Warning: STRIPE_SECRET_KEY not set. Stripe payments will not function until configured.");
-}
 
 if (!YOCO_SECRET_KEY) {
   console.warn("Warning: YOCO_SECRET_KEY not set. Yoco payments will not function until configured.");
 }
-
-const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: "2024-08-01" }) : null;
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || null;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || null;
@@ -112,134 +104,13 @@ app.use(cors());
 
 // =============================================================================
 // BUG FIX #5: Do NOT apply bodyParser.json() globally.
-// Stripe webhook verification requires the raw request body (Buffer).
-// If bodyParser.json() runs first, it consumes the stream and req.body becomes
-// a parsed object — Stripe's constructEvent() then throws
-// "No signatures found matching the expected signature for payload".
-// We apply bodyParser per-route instead.
+// Some webhook signature verifications require the raw request body (Buffer).
+// If express.json() runs first, it consumes the stream and req.body becomes
+// a parsed object, which can break signature verification for some payment webhooks.
+// We apply body parsing per-route instead.
 // =============================================================================
 
-app.get("/", (_req, res) => res.json({ ok: true, message: "Payments server running (Stripe + PayFast + Yoco)" }));
-
-// =============================================================================
-// STRIPE: Create Checkout Session
-// =============================================================================
-app.post("/stripe/create-session", express.json(), async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Stripe not configured on server" });
-  try {
-    const { itemName, amount, currency = "zar", userId, email, reference, kind, planId, applicationId } = req.body;
-    if (!itemName || !amount) return res.status(400).json({ error: "Missing itemName or amount" });
-
-    const unitAmount = Math.round(Number(amount) * 100);
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: String(currency).toLowerCase(),
-            product_data: { name: String(itemName) },
-            unit_amount: unitAmount,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}&kind=${kind || ""}&ref=${encodeURIComponent(reference || "")}`,
-      cancel_url: `${CANCEL_URL}?kind=${kind || ""}&ref=${encodeURIComponent(reference || "")}`,
-      metadata: {
-        userId: userId || "",
-        reference: reference || "",
-        kind: kind || "",
-        planId: planId || "",
-        applicationId: applicationId || "",
-      },
-    });
-
-    return res.json({ url: session.url });
-  } catch (err) {
-    console.error("create-session error", err);
-    return res.status(500).json({ error: String(err) });
-  }
-});
-
-// =============================================================================
-// STRIPE: Webhook — must use raw body for signature verification
-// =============================================================================
-app.post("/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret) return res.status(200).send("webhook not configured");
-  const sig = req.headers["stripe-signature"];
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    console.error("Webhook signature verification failed.", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object;
-      console.log("Checkout session completed", session.id, session.metadata);
-      const metadata = session.metadata || {};
-      const userId = metadata.userId || metadata.user_id || null;
-      const planId = metadata.planId || metadata.plan_id || null;
-      const kind = metadata.kind || null;
-      const applicationId = metadata.applicationId || metadata.application_id || null;
-
-      if (!supabase) {
-        console.warn("Supabase not configured: cannot persist payment result.");
-        break;
-      }
-
-      try {
-        if (kind === "plan" && userId && planId) {
-          const { error } = await supabase
-            .from("profiles")
-            .update({
-              selected_plan: planId,
-              plan_payment_status: "paid",
-              plan_paid_at: new Date().toISOString(),
-            })
-            .eq("id", userId);
-          if (error) console.error("Supabase update error:", error);
-          else console.log(`Profile ${userId} updated: plan ${planId} marked paid.`);
-        } else if (kind === "application_fee" && applicationId) {
-          const { error } = await supabase
-            .from("institution_applications")
-            .update({
-              fee_payment_status: "paid",
-              fee_paid_at: new Date().toISOString(),
-            })
-            .eq("id", applicationId);
-          if (error) console.error("Supabase institution_applications update error:", error);
-          else console.log(`Application ${applicationId} fee marked paid via Stripe webhook.`);
-        } else if (kind === "application_fee" && userId) {
-          const { error } = await supabase
-            .from("institution_applications")
-            .update({
-              fee_payment_status: "paid",
-              fee_paid_at: new Date().toISOString(),
-            })
-            .eq("user_id", userId)
-            .eq("fee_payment_status", "unpaid");
-          if (error) console.error("Supabase institution_applications bulk update error:", error);
-          else console.log(`All unpaid application fees for user ${userId} marked paid.`);
-        } else {
-          console.warn("Unhandled metadata: kind=", kind, "userId=", userId, "planId=", planId, "applicationId=", applicationId);
-        }
-      } catch (err) {
-        console.error("Error updating Supabase:", err);
-      }
-      break;
-    }
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  res.json({ received: true });
-});
+app.get("/", (_req, res) => res.json({ ok: true, message: "Payments server running (PayFast + Yoco)" }));
 
 // =============================================================================
 // PAYFAST: Health check endpoint
@@ -600,10 +471,10 @@ app.post("/yoco/webhook", express.json({
 // =============================================================================
 app.listen(PORT, () => {
   console.log(`Payments server listening on port ${PORT}`);
-  console.log(`  Stripe: ${stripe ? "configured" : "NOT configured"}`);
   console.log(`  PayFast: ${process.env.VITE_PAYFAST_MERCHANT_ID ? "configured" : "NOT configured"}`);
   console.log(`  Yoco: ${YOCO_SECRET_KEY ? "configured" : "NOT configured"}`);
   console.log(`  Supabase: ${supabase ? "configured with service role" : "NOT configured"}`);
   console.log(`  Success URL: ${SUCCESS_URL}`);
   console.log(`  Cancel URL: ${CANCEL_URL}`);
 });
+

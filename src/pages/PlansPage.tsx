@@ -31,10 +31,6 @@ export function PlansPage() {
       planId: plan.id,
     };
 
-    // BUG FIX #4: Yoco is the primary SA payment gateway — try it first.
-    // Previously Stripe was always attempted first, meaning Yoco was only
-    // reached as a fallback after a Stripe network failure, causing a slow UX
-    // and misleading error toasts on every payment attempt.
     if (isYocoConfigured()) {
       try {
         setProcessingPlanId(plan.id);
@@ -43,25 +39,11 @@ export function PlansPage() {
         return;
       } catch (e) {
         setProcessingPlanId(null);
-        console.warn("Yoco checkout failed, trying Stripe:", e);
+        console.warn("Yoco checkout failed, trying PayFast:", e);
       }
     }
 
-    // Fallback to Stripe
-    const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
-    if (paymentsServer) {
-      try {
-        const payments = await import("@/lib/payments");
-        await payments.startStripeCheckout(commonRequest);
-        return;
-      } catch (e) {
-        console.warn("Stripe checkout also failed:", e);
-        toast({ title: "Payment failed to start", description: String(e), variant: "destructive" });
-        return;
-      }
-    }
-
-    // Last resort: PayFast (redirect-based, no server required)
+    // PayFast (redirect-based, no server required)
     if (isPaymentConfigured()) {
       try {
         startPayfastCheckout(commonRequest);

@@ -227,24 +227,8 @@ export function OnboardingPage() {
             });
             return;
           } catch (yocoErr) {
-            console.warn("Yoco fee checkout failed, trying Stripe:", yocoErr);
+            console.warn("Yoco fee checkout failed, trying PayFast:", yocoErr);
           }
-        }
-
-        try {
-          const payments = await import("@/lib/payments");
-          await payments.startStripeCheckout({
-            kind: "application_fee",
-            itemName: `${inst.name} application fee`,
-            amount: inst.fee,
-            userId: user.id,
-            email: email || undefined,
-            name: fullName || email || "CareerPath User",
-            reference,
-          });
-          return;
-        } catch (stripeErr) {
-          console.warn("Stripe fee checkout failed:", stripeErr);
         }
       }
 
@@ -282,25 +266,8 @@ export function OnboardingPage() {
             });
             return;
           } catch (yocoErr) {
-            console.warn("Yoco plan checkout failed, trying Stripe:", yocoErr);
+            console.warn("Yoco plan checkout failed, trying PayFast:", yocoErr);
           }
-        }
-
-        try {
-          const payments = await import("@/lib/payments");
-          await payments.startStripeCheckout({
-            kind: "plan",
-            itemName: selectedPlanData.name,
-            amount: selectedPlanData.price,
-            userId: user.id,
-            email: email || undefined,
-            name: fullName || email || "CareerPath User",
-            reference,
-            planId: selectedPlan,
-          });
-          return;
-        } catch (stripeErr) {
-          console.warn("Stripe plan checkout failed:", stripeErr);
         }
       }
 
@@ -818,7 +785,7 @@ export function OnboardingPage() {
                 <div className="flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-bold text-[#0F172A] text-sm">Payment due: {formatRand(selectedPlanData.price)}</p>
-                    <p className="text-sm text-slate-600">Secure in-app payment via Stripe or PayFast.</p>
+                    <p className="text-sm text-slate-600">Secure in-app payment via PayFast or Yoco.</p>
                   </div>
                   <Button onClick={() => void handlePayPlan()} disabled={saving || planPaid} className="h-11 bg-[#006B5E] text-white hover:bg-[#005548] w-full sm:w-auto text-sm">
                     {planPaid ? <><Check className="mr-2 size-4" /> Paid</> : saving ? "Processing…" : "Pay plan now"}

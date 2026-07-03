@@ -18,7 +18,7 @@ const MANAGED_FEATURES = [
   { icon: Wallet, title: "NSFAS & Bursaries", description: "Check NSFAS eligibility, gather required docs, and discover bursaries linked to your chosen institutions.", color: "bg-amber-50 text-amber-700" },
   { icon: BookOpen, title: "Managed Submissions", description: "Complete your profile, choose your options, and track the university, NSFAS, and bursary applications we submit for you.", color: "bg-rose-50 text-rose-700" },
   { icon: Shield, title: "Secure & Compliant", description: "Your data is protected under the POPI Act and securely stored.", color: "bg-slate-50 text-slate-700" },
-  { icon: Sparkles, title: "In-App Fee Payments", description: "Pay university and TVET application fees directly inside the app with Stripe or PayFast.", color: "bg-purple-50 text-purple-700" },
+  { icon: Sparkles, title: "In-App Fee Payments", description: "Pay university and TVET application fees directly inside the app with PayFast or Yoco.", color: "bg-purple-50 text-purple-700" },
 ];
 
 const STEPS = [

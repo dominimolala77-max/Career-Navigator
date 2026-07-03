@@ -70,40 +70,6 @@ export function startPayfastCheckout(request: PaymentRequest) {
   form.submit();
 }
 
-// Stripe checkout integration (requires a small server to create sessions)
-export function isStripeConfigured() {
-  return Boolean(import.meta.env.VITE_PAYMENTS_SERVER_URL);
-}
-
-export async function startStripeCheckout(request: PaymentRequest) {
-  const server = import.meta.env.VITE_PAYMENTS_SERVER_URL || "";
-  if (!server) throw new Error("Payments server URL not configured (VITE_PAYMENTS_SERVER_URL)");
-
-  const resp = await fetch(`${server.replace(/\/$/, "")}/stripe/create-session`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      kind: request.kind,
-      itemName: request.itemName,
-      amount: request.amount,
-      userId: request.userId,
-      email: request.email,
-      reference: request.reference,
-      planId: request.planId,
-      applicationId: request.applicationId,
-      currency: request.amount ? "zar" : undefined,
-    }),
-  });
-
-  const data = await resp.json();
-  if (!resp.ok) throw new Error(data.error || "Failed to create Stripe session");
-  if (data.url) {
-    window.location.href = data.url;
-  } else {
-    throw new Error("No checkout url returned from payments server");
-  }
-}
-
 // ─── Yoco Checkout Integration ──────────────────────────────────────────
 // Yoco is a South African payment gateway supporting card payments via hosted checkout.
 // Docs: https://developer.yoco.com/docs/checkout-api

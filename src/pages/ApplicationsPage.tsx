@@ -127,25 +127,8 @@ export function ApplicationsPage() {
             });
             return;
           } catch (yocoErr) {
-            console.warn("Yoco fee checkout failed, trying Stripe:", yocoErr);
+            console.warn("Yoco fee checkout failed:", yocoErr);
           }
-        }
-
-        try {
-          const payments = await import("@/lib/payments");
-          await payments.startStripeCheckout({
-            kind: "application_fee",
-            itemName: `${app.institution} application fee`,
-            amount: feeAmount,
-            userId: user.id,
-            email: user.email,
-            name: user.email ?? "CareerPath User",
-            reference,
-            applicationId: app.id,
-          });
-          return;
-        } catch (stripeErr) {
-          console.warn("Stripe fee checkout failed:", stripeErr);
         }
       }
 
@@ -192,25 +175,8 @@ export function ApplicationsPage() {
             });
             return;
           } catch (yocoErr) {
-            console.warn("Yoco fee checkout failed, trying Stripe:", yocoErr);
+            console.warn("Yoco fee checkout failed:", yocoErr);
           }
-        }
-
-        try {
-          const payments = await import("@/lib/payments");
-          await payments.startStripeCheckout({
-            kind: "application_fee",
-            itemName: `${inst.institution_name} application fee`,
-            amount: feeAmount,
-            userId: user.id,
-            email: user.email,
-            name: user.email ?? "CareerPath User",
-            reference,
-            applicationId: appId,
-          });
-          return;
-        } catch (stripeErr) {
-          console.warn("Stripe fee checkout failed:", stripeErr);
         }
       }
 

@@ -46,7 +46,7 @@ function App() {
               payments.ts return_url / server SUCCESS_URL), but the route was registered
               as /payment/success — causing a 404 after every successful payment.
               Added /payment/return route; kept /payment/success as an alias so that
-              any Stripe-configured SUCCESS_URL pointing to /payment/success still works.
+              any configured SUCCESS_URL pointing to /payment/success still works.
             */}
             <Route path="/payment/return">
               <RequireAuth>
