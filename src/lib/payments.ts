@@ -109,10 +109,7 @@ export async function startStripeCheckout(request: PaymentRequest) {
 // Docs: https://developer.yoco.com/docs/checkout-api
 
 export function isYocoConfigured() {
-  return Boolean(
-    import.meta.env.VITE_PAYMENTS_SERVER_URL &&
-    import.meta.env.VITE_YOCO_PUBLIC_KEY
-  );
+  return Boolean(import.meta.env.VITE_PAYMENTS_SERVER_URL);
 }
 
 export async function startYocoCheckout(request: PaymentRequest) {

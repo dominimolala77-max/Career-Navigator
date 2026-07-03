@@ -52,7 +52,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden min-w-0">
       {/* Top Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-white shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
@@ -161,7 +161,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Main Content */}
       <main className={cn(
-        "mx-auto max-w-7xl px-3 sm:px-6",
+        "mx-auto max-w-7xl px-3 sm:px-6 min-w-0",
         showNav ? "py-4 sm:py-6" : "py-0"
       )}>
         {children}

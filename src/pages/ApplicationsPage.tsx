@@ -103,15 +103,65 @@ export function ApplicationsPage() {
   }
 
   async function handlePayFee(app: Application) {
-    const ok = await updateApplication(app.id, {
-      fee_payment_status: "paid",
-      fee_paid_at: new Date().toISOString(),
-      status_updates: [...(app.status_updates ?? []), { message: `Application fee paid: R${app.application_fee ?? 0}.`, at: new Date().toISOString(), by: "system" }],
-    });
-    if (ok) {
-      setApplications(prev => prev.map(a => a.id === app.id ? { ...a, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : a));
-      setSelected(prev => prev?.id === app.id ? { ...prev, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : prev);
-      toast({ title: "Application fee marked paid" });
+    if (!user) return;
+    setPayingFeeId(app.id);
+
+    try {
+      const reference = `fee_${app.id}_${Date.now()}`;
+      const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
+
+      if (paymentsServer) {
+        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
+        if (isYocoConfigured()) {
+          try {
+            await startYocoCheckout({
+              kind: "application_fee",
+              itemName: `${app.institution} application fee`,
+              amount: app.application_fee,
+              userId: user.id,
+              email: user.email,
+              name: user.email ?? "CareerPath User",
+              reference,
+              applicationId: app.id,
+            });
+            return;
+          } catch (yocoErr) {
+            console.warn("Yoco fee checkout failed, trying Stripe:", yocoErr);
+          }
+        }
+
+        try {
+          const payments = await import("@/lib/payments");
+          await payments.startStripeCheckout({
+            kind: "application_fee",
+            itemName: `${app.institution} application fee`,
+            amount: app.application_fee,
+            userId: user.id,
+            email: user.email,
+            name: user.email ?? "CareerPath User",
+            reference,
+            applicationId: app.id,
+          });
+          return;
+        } catch (stripeErr) {
+          console.warn("Stripe fee checkout failed:", stripeErr);
+        }
+      }
+
+      const ok = await updateApplication(app.id, {
+        fee_payment_status: "paid",
+        fee_paid_at: new Date().toISOString(),
+        status_updates: [...(app.status_updates ?? []), { message: `Application fee paid: R${app.application_fee ?? 0}.`, at: new Date().toISOString(), by: "system" }],
+      });
+      if (ok) {
+        setApplications(prev => prev.map(a => a.id === app.id ? { ...a, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : a));
+        setSelected(prev => prev?.id === app.id ? { ...prev, fee_payment_status: "paid", fee_paid_at: new Date().toISOString() } : prev);
+        toast({ title: "Application fee marked paid" });
+      }
+    } catch (err) {
+      toast({ title: "Payment failed", description: String(err), variant: "destructive" });
+    } finally {
+      setPayingFeeId(null);
     }
   }
 
@@ -125,7 +175,25 @@ export function ApplicationsPage() {
       const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
 
       if (paymentsServer) {
-        // Try Stripe first
+        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
+        if (isYocoConfigured()) {
+          try {
+            await startYocoCheckout({
+              kind: "application_fee",
+              itemName: `${inst.institution_name} application fee`,
+              amount: inst.application_fee,
+              userId: user.id,
+              email: user.email,
+              name: user.email ?? "CareerPath User",
+              reference,
+              applicationId: appId,
+            });
+            return;
+          } catch (yocoErr) {
+            console.warn("Yoco fee checkout failed, trying Stripe:", yocoErr);
+          }
+        }
+
         try {
           const payments = await import("@/lib/payments");
           await payments.startStripeCheckout({
@@ -140,23 +208,7 @@ export function ApplicationsPage() {
           });
           return;
         } catch (stripeErr) {
-          console.warn("Stripe fee checkout failed, trying Yoco:", stripeErr);
-        }
-
-        // Fallback to Yoco if Stripe fails
-        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
-        if (isYocoConfigured()) {
-          await startYocoCheckout({
-            kind: "application_fee",
-            itemName: `${inst.institution_name} application fee`,
-            amount: inst.application_fee,
-            userId: user.id,
-            email: user.email,
-            name: user.email ?? "CareerPath User",
-            reference,
-            applicationId: appId,
-          });
-          return;
+          console.warn("Stripe fee checkout failed:", stripeErr);
         }
       }
 

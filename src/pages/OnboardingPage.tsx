@@ -217,7 +217,24 @@ export function OnboardingPage() {
       const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
 
       if (paymentsServer) {
-        // Try Stripe first
+        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
+        if (isYocoConfigured()) {
+          try {
+            await startYocoCheckout({
+              kind: "application_fee",
+              itemName: `${inst.name} application fee`,
+              amount: inst.fee,
+              userId: user.id,
+              email: email || undefined,
+              name: fullName || email || "CareerPath User",
+              reference,
+            });
+            return;
+          } catch (yocoErr) {
+            console.warn("Yoco fee checkout failed, trying Stripe:", yocoErr);
+          }
+        }
+
         try {
           const payments = await import("@/lib/payments");
           await payments.startStripeCheckout({
@@ -231,22 +248,7 @@ export function OnboardingPage() {
           });
           return;
         } catch (stripeErr) {
-          console.warn("Stripe fee checkout failed, trying Yoco:", stripeErr);
-        }
-
-        // Fallback to Yoco
-        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
-        if (isYocoConfigured()) {
-          await startYocoCheckout({
-            kind: "application_fee",
-            itemName: `${inst.name} application fee`,
-            amount: inst.fee,
-            userId: user.id,
-            email: email || undefined,
-            name: fullName || email || "CareerPath User",
-            reference,
-          });
-          return;
+          console.warn("Stripe fee checkout failed:", stripeErr);
         }
       }
 
@@ -269,7 +271,25 @@ export function OnboardingPage() {
       const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
 
       if (paymentsServer) {
-        // Try Stripe first
+        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
+        if (isYocoConfigured()) {
+          try {
+            await startYocoCheckout({
+              kind: "plan",
+              itemName: selectedPlanData.name,
+              amount: selectedPlanData.price,
+              userId: user.id,
+              email: email || undefined,
+              name: fullName || email || "CareerPath User",
+              reference,
+              planId: selectedPlan,
+            });
+            return;
+          } catch (yocoErr) {
+            console.warn("Yoco plan checkout failed, trying Stripe:", yocoErr);
+          }
+        }
+
         try {
           const payments = await import("@/lib/payments");
           await payments.startStripeCheckout({
@@ -284,23 +304,7 @@ export function OnboardingPage() {
           });
           return;
         } catch (stripeErr) {
-          console.warn("Stripe plan checkout failed, trying Yoco:", stripeErr);
-        }
-
-        // Fallback to Yoco
-        const { isYocoConfigured, startYocoCheckout } = await import("@/lib/payments");
-        if (isYocoConfigured()) {
-          await startYocoCheckout({
-            kind: "plan",
-            itemName: selectedPlanData.name,
-            amount: selectedPlanData.price,
-            userId: user.id,
-            email: email || undefined,
-            name: fullName || email || "CareerPath User",
-            reference,
-            planId: selectedPlan,
-          });
-          return;
+          console.warn("Stripe plan checkout failed:", stripeErr);
         }
       }
 
