@@ -108,6 +108,7 @@ export function ApplicationsPage() {
 
     try {
       const reference = `fee_${app.id}_${Date.now()}`;
+      const feeAmount: number = app.application_fee ?? 0;
       const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
 
       if (paymentsServer) {
@@ -117,7 +118,7 @@ export function ApplicationsPage() {
             await startYocoCheckout({
               kind: "application_fee",
               itemName: `${app.institution} application fee`,
-              amount: app.application_fee,
+              amount: feeAmount,
               userId: user.id,
               email: user.email,
               name: user.email ?? "CareerPath User",
@@ -135,7 +136,7 @@ export function ApplicationsPage() {
           await payments.startStripeCheckout({
             kind: "application_fee",
             itemName: `${app.institution} application fee`,
-            amount: app.application_fee,
+            amount: feeAmount,
             userId: user.id,
             email: user.email,
             name: user.email ?? "CareerPath User",
@@ -172,6 +173,7 @@ export function ApplicationsPage() {
 
     try {
       const reference = `fee_${appId}_${Date.now()}`;
+      const feeAmount: number = inst.application_fee ?? 0;
       const paymentsServer = import.meta.env.VITE_PAYMENTS_SERVER_URL;
 
       if (paymentsServer) {
@@ -181,7 +183,7 @@ export function ApplicationsPage() {
             await startYocoCheckout({
               kind: "application_fee",
               itemName: `${inst.institution_name} application fee`,
-              amount: inst.application_fee,
+              amount: feeAmount,
               userId: user.id,
               email: user.email,
               name: user.email ?? "CareerPath User",
@@ -199,7 +201,7 @@ export function ApplicationsPage() {
           await payments.startStripeCheckout({
             kind: "application_fee",
             itemName: `${inst.institution_name} application fee`,
-            amount: inst.application_fee,
+            amount: feeAmount,
             userId: user.id,
             email: user.email,
             name: user.email ?? "CareerPath User",
