@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "start:payments": "node server/stripe-server.mjs",
+    "start:yoco": "node server/yoco-server.mjs",
     "test:yoco:create": "node scripts/test-payments.js",
     "test:yoco:webhook": "node scripts/send-test-webhook.js"
   },

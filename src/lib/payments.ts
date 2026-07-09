@@ -80,9 +80,17 @@ export function isYocoConfigured() {
 
 export async function startYocoCheckout(request: PaymentRequest) {
   const server = import.meta.env.VITE_PAYMENTS_SERVER_URL || "";
-  if (!server) throw new Error("Payments server URL not configured (VITE_PAYMENTS_SERVER_URL)");
 
-  const resp = await fetch(`${server.replace(/\/$/, "")}/yoco/create-checkout`, {
+  // Determine the API endpoint:
+  // - If a payments server URL is configured, use it directly (e.g. http://localhost:4242)
+  // - Otherwise, fall back to the Vite proxy path (/yoco/create-checkout)
+  //   This ensures mobile devices on the same LAN can reach the backend through the Vite dev server.
+  const apiPath = "/yoco/create-checkout";
+  const apiUrl = server
+    ? `${server.replace(/\/$/, "")}${apiPath}`
+    : apiPath;
+
+  const resp = await fetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

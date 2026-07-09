@@ -12,8 +12,24 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: "0.0.0.0", // Allow LAN access for mobile testing
+    proxy: {
+      // Proxy Yoco API calls to the backend server
+      // This enables mobile devices to reach the Yoco server through the Vite dev server
+      "/yoco": {
+        target: "http://localhost:4242",
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port: 4173,
+    host: "0.0.0.0",
+    proxy: {
+      "/yoco": {
+        target: "http://localhost:4242",
+        changeOrigin: true,
+      },
+    },
   },
 });
